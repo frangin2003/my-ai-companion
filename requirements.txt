@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+langchain_openai
+langchain_groq
+langchain_google_genai
+langchain_community
+python-dotenv
+google-genai
+pyaudio
+websockets

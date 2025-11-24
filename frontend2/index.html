@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Companion v2</title>
+    <link rel="stylesheet" href="style.css">
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="container"></div>
+    <div id="ui">
+        <button onclick="setAnimation('idle')">Idle</button>
+        <button onclick="setAnimation('speak')">Speak</button>
+        <button onclick="setAnimation('laugh')">Laugh</button>
+        <button onclick="setAnimation('think')">Think</button>
+        <button onclick="setAnimation('sleep')">Sleep</button>
+        <button onclick="setAnimation('jump')">Jump</button>
+        <button onclick="setAnimation('dance')">Dance</button>
+        <button onclick="setAnimation('angry')">Angry</button>
+    </div>
+    <script type="module" src="main.js"></script>
+</body>
+</html>
