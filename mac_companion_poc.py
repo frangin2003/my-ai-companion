@@ -3,10 +3,9 @@ import time
 import google.generativeai as genai
 from AppKit import NSWorkspace
 from dotenv import load_dotenv
+import subprocess
 
 load_dotenv()
-
-import subprocess
 
 def get_active_app_name_applescript():
     """Returns the active app name using AppleScript (slower but sometimes more reliable)."""
@@ -34,7 +33,36 @@ def get_active_app_name():
     
     return None
 
-def generate_suggestion(app_name):
+def get_numbers_context():
+    """Retrieves context from the active Numbers document using AppleScript."""
+    script = '''
+    tell application "Numbers"
+        if not (exists document 1) then return "No document open"
+        tell document 1
+            set docName to name
+            tell active sheet
+                set sheetName to name
+                try
+                    tell first table
+                        set tableName to name
+                        set rowCount to row count
+                        set colCount to column count
+                        return "Document: " & docName & ", Sheet: " & sheetName & ", Table: " & tableName & ", Rows: " & rowCount & ", Columns: " & colCount
+                    end tell
+                on error
+                    return "Document: " & docName & ", Sheet: " & sheetName & " (No table found)"
+                end try
+            end tell
+        end tell
+    end tell
+    '''
+    try:
+        result = subprocess.run(['osascript', '-e', script], capture_output=True, text=True)
+        return result.stdout.strip()
+    except Exception as e:
+        return f"Error getting context: {e}"
+
+def generate_suggestion(app_name, context=None):
     """Generates a context-aware suggestion using Gemini API."""
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
@@ -46,8 +74,15 @@ def generate_suggestion(app_name):
     
     prompt = (
         f"You are an expert Apple Numbers and spreadsheet assistant. "
-        f"The user has just opened the application: {app_name}. "
-        f"In one short, casual sentence, give a powerful keyboard shortcut or a formula tip specific to Apple Numbers. "
+        f"The user is currently working in {app_name}. "
+    )
+    
+    if context:
+        prompt += f"Here is the current context of the spreadsheet: {context}. "
+        
+    prompt += (
+        f"Based on this context (if available) or just the fact that they are using Numbers, "
+        f"in one short, casual sentence, give a powerful keyboard shortcut, a formula tip, or an insight specific to what they might be doing. "
         f"Do not be formal."
     )
     
@@ -66,10 +101,12 @@ def speak_text(text):
 
 def main():
     print("[System] Companion initialized. Watching for: Numbers...")
-    print("[Info] If detection is stuck, ensure Terminal has Accessibility permissions.")
+    print("[Info] Monitoring interval: 10s. Suggestion cooldown: 60s.")
     
     target_app = "Numbers"
     previous_app = None
+    last_suggestion_time = 0
+    suggestion_cooldown = 60  # seconds
     
     try:
         while True:
@@ -81,18 +118,27 @@ def main():
             if current_app != previous_app:
                 print(f"[Status] Current App: {current_app}")
                 
-                if current_app == target_app and previous_app != target_app:
-                    print(f"[Event] User switched to {target_app}!")
-                    print("[AI] Thinking...")
-                    
-                    suggestion = generate_suggestion(current_app)
-                    print(f"[AI Suggestion] \"{suggestion}\"")
-                    
-                    print("[Voice] Speaking...")
-                    speak_text(suggestion)
+                if current_app == target_app:
+                    current_time = time.time()
+                    if current_time - last_suggestion_time >= suggestion_cooldown:
+                        print(f"[Event] User switched to {target_app}!")
+                        
+                        context = get_numbers_context()
+                        print(f"[Context] {context}")
+                        
+                        print("[AI] Thinking...")
+                        suggestion = generate_suggestion(current_app, context)
+                        print(f"[AI Suggestion] \"{suggestion}\"")
+                        
+                        print("[Voice] Speaking...")
+                        speak_text(suggestion)
+                        
+                        last_suggestion_time = current_time
+                    else:
+                        print(f"[Info] Suggestion cooldown active. {int(suggestion_cooldown - (current_time - last_suggestion_time))}s remaining.")
             
             previous_app = current_app
-            time.sleep(1)
+            time.sleep(10) # Slower monitoring
             
     except KeyboardInterrupt:
         print("\n[System] Companion stopping...")
