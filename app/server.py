@@ -112,11 +112,10 @@ async def websocket_endpoint(websocket: WebSocket):
                 user_message = data["data"]["content"]
                 logger.info(f"Received user message: {user_message}")
                 
-                # Get current context
-                current_app = app_monitor.get_active_app_name()
-                context = "No specific app context."
-                if app_monitor.is_target_app(current_app):
-                    context = app_monitor.get_context()
+                # Get current context from the monitored app (Numbers) regardless of focus
+                # This ensures we get context even if the user is typing in the CLI
+                context = app_monitor.get_context()
+                logger.info(f"Retrieved context for user question: {context}")
                 
                 await manager.broadcast({
                     "type": "thinking_start",
@@ -124,10 +123,22 @@ async def websocket_endpoint(websocket: WebSocket):
                 })
                 
                 persona = get_persona("default")
-                prompt = persona["prompt_template"].format(
-                    context=context,
-                    user_input=user_message
-                )
+                # We want to use the 'numbers_guru' persona if we have valid context, 
+                # or at least pass the context to the default persona.
+                # Let's check if we have a valid document open.
+                if "No document open" not in context:
+                     persona = get_persona("numbers_guru")
+                     prompt = persona["prompt_template"].format(
+                        app_name="Numbers", # We assume we are talking about Numbers
+                        context=context
+                    )
+                     # Append user input to the prompt since the template might not have it
+                     prompt += f"\n\nUser Question: {user_message}"
+                else:
+                    prompt = persona["prompt_template"].format(
+                        context=context,
+                        user_input=user_message
+                    )
                 
                 logger.info("Generating reply with LLM...")
                 response = llm.generate(prompt, persona["system_instruction"])

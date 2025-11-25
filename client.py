@@ -64,9 +64,7 @@ async def main():
                         }
                         await websocket.send(json.dumps(message))
                         
-                except KeyboardInterrupt:
-                    continue
-                except EOFError:
+                except (KeyboardInterrupt, EOFError):
                     break
             
             listener_task.cancel()
