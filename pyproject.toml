@@ -8,6 +8,7 @@ dependencies = [
     "fastapi>=0.122.0",
     "google-generativeai>=0.8.5",
     "prompt-toolkit>=3.0.52",
+    "pydantic-settings>=2.12.0",
     "pyobjc-framework-cocoa>=12.1",
     "python-dotenv>=1.2.1",
     "uvicorn>=0.38.0",

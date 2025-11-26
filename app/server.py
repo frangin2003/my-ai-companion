@@ -5,7 +5,9 @@ from typing import List
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from app.llm.gemini import GeminiLLM
 from app.apps.numbers import NumbersApp
+from app.apps.numbers import NumbersApp
 from app.prompts.personas import get_persona
+from app.config import settings
 
 # Configure Logging
 logging.basicConfig(
@@ -47,7 +49,7 @@ async def monitor_loop():
     logger.info("Monitor loop started.")
     previous_app = None
     last_suggestion_time = 0
-    suggestion_cooldown = 60
+    suggestion_cooldown = settings.suggestion_cooldown
     
     while True:
         try:
@@ -93,10 +95,10 @@ async def monitor_loop():
                         logger.info(f"Target app {current_app} active, but cooldown active ({int(suggestion_cooldown - (current_time - last_suggestion_time))}s left).")
             
             previous_app = current_app
-            await asyncio.sleep(10)
+            await asyncio.sleep(settings.monitor_interval)
         except Exception as e:
             logger.error(f"Monitor error: {e}")
-            await asyncio.sleep(10)
+            await asyncio.sleep(settings.monitor_interval)
 
 @app.on_event("startup")
 async def startup_event():

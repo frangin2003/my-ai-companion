@@ -21,13 +21,20 @@ You are helping a participant in the **macOS AI Companion Workshop**. This proje
 ## How to Operate
 
 ### Running the Project
-1.  **Start the Server**:
+1.  **Configure Environment**:
+    Copy `.env.example` to `.env` and set your API key:
+    ```bash
+    cp .env.example .env
+    # Edit .env to add your GEMINI_API_KEY
+    ```
+
+2.  **Start the Server**:
     ```bash
     uv run main.py
     ```
     This starts the WebSocket server on `ws://localhost:8000/ws`.
 
-2.  **Start the Client**:
+3.  **Start the Client**:
     Open a new terminal and run:
     ```bash
     uv run client.py
