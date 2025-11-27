@@ -23,12 +23,13 @@ class GeminiTTS(TTSProvider):
             return
 
         try:
+            # Voices: https://docs.cloud.google.com/text-to-speech/docs/gemini-tts#voice_options
             generate_config = types.GenerateContentConfig(
                 response_modalities=["AUDIO"],
                 speech_config=types.SpeechConfig(
                     voice_config=types.VoiceConfig(
                         prebuilt_voice_config=types.PrebuiltVoiceConfig(
-                            voice_name="Puck"
+                            voice_name="Kore"
                         )
                     )
                 )
