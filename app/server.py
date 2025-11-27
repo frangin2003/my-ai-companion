@@ -35,8 +35,9 @@ class ConnectionManager:
         logger.info(f"Client connected. Total: {len(self.active_connections)}")
 
     def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
-        logger.info(f"Client disconnected. Total: {len(self.active_connections)}")
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+            logger.info(f"Client disconnected. Total: {len(self.active_connections)}")
 
     async def broadcast(self, message: dict):
         logger.info(f"Broadcasting event: {message['type']}")
@@ -174,6 +175,10 @@ async def websocket_endpoint(websocket: WebSocket):
         try:
             # Receive message (can be text or bytes)
             message = await websocket.receive()
+            
+            if message["type"] == "websocket.disconnect":
+                manager.disconnect(websocket)
+                break
             
             user_message = ""
             
