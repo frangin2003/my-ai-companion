@@ -5,34 +5,9 @@ import sys
 from typing import List
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from app.llm.gemini import GeminiLLM
-# Conditional imports based on OS
-if sys.platform == "win32":
-    from app.apps.excel import ExcelApp
-    from app.tts.windows import WindowsTTS
-    AppProviderClass = ExcelApp
-    TTSProviderClass = WindowsTTS
-    TARGET_APP_NAME = "Excel"
-elif sys.platform == "darwin":
-    from app.apps.numbers import NumbersApp
-    from app.tts.macos import MacOSTTS
-    AppProviderClass = NumbersApp
-    TTSProviderClass = MacOSTTS
-    TARGET_APP_NAME = "Numbers"
-else:
-    # Fallback or error for unsupported OS
-    from app.apps.base import AppProvider
-    class MockApp(AppProvider):
-        def get_active_app_name(self): return None
-        def is_target_app(self, name): return False
-        def get_context(self): return "Unsupported OS"
-        def get_context(self): return "Unsupported OS"
-    class MockTTS:
-        def speak(self, text): pass
-    AppProviderClass = MockApp
-    TTSProviderClass = MockTTS
-    TARGET_APP_NAME = "Unknown"
 from app.apps.monitor import SystemMonitor
 from app.apps.registry import AppRegistry
+from app.setup import setup_registry, setup_tts
 from app.prompts.personas import PERSONA
 from app.prompts.app_instructions import get_app_instruction
 from app.config import settings
@@ -74,9 +49,9 @@ class ConnectionManager:
 manager = ConnectionManager()
 llm = GeminiLLM()
 system_monitor = SystemMonitor()
-registry = AppRegistry()
-registry.register(AppProviderClass())
-tts = TTSProviderClass()
+
+registry = setup_registry()
+tts = setup_tts()
 
 async def monitor_loop():
     """Background task to monitor active app and emit events."""
