@@ -112,19 +112,27 @@ async def monitor_loop():
                             )
                             
                             logger.info("Generating suggestion with LLM...")
-                            suggestion = llm.generate(user_prompt, system_prompt)
-                            logger.info(f"Generated suggestion: {suggestion}")
+                            response_data = llm.generate(user_prompt, system_prompt)
+                            logger.info(f"Generated suggestion: {response_data}")
+                            
+                            message_text = response_data
+                            emotion = "neutral"
+                            
+                            if isinstance(response_data, dict):
+                                message_text = response_data.get("message", "")
+                                emotion = response_data.get("emotion", "neutral")
                             
                             await manager.broadcast({
                                 "type": "suggestion",
                                 "data": {
                                     "app_name": current_app,
-                                    "message": suggestion
+                                    "message": message_text,
+                                    "emotion": emotion
                                 }
                             })
                             
                             # Speak the suggestion on the server
-                            tts.speak(suggestion)
+                            tts.speak(message_text)
                             
                             last_suggestion_time = current_time
                         else:
@@ -227,16 +235,26 @@ async def websocket_endpoint(websocket: WebSocket):
                 user_prompt = f"{base_prompt}\n\nUser Question: {user_message}"
                 
                 logger.info("Generating reply with LLM...")
-                response = llm.generate(user_prompt, system_prompt)
-                logger.info(f"Generated reply: {response}")
+                response_data = llm.generate(user_prompt, system_prompt)
+                logger.info(f"Generated reply: {response_data}")
+                
+                message_text = response_data
+                emotion = "neutral"
+                
+                if isinstance(response_data, dict):
+                    message_text = response_data.get("message", "")
+                    emotion = response_data.get("emotion", "neutral")
                 
                 await manager.broadcast({
                     "type": "reply",
-                    "data": {"message": response}
+                    "data": {
+                        "message": message_text,
+                        "emotion": emotion
+                    }
                 })
                 
                 # Speak the reply on the server
-                tts.speak(response)
+                tts.speak(message_text)
             
         except WebSocketDisconnect:
             manager.disconnect(websocket)
