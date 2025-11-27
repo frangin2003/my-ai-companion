@@ -20,10 +20,11 @@ You are helping a participant in the **Hybrid AI Companion Workshop**. This proj
 
 - **Language**: Python 3.12+
 - **Package Manager**: `uv`
-- **Key Libraries**: `fastapi`, `uvicorn`, `websockets`, `google-generativeai`, `prompt_toolkit`.
+- **Key Libraries**: `fastapi`, `uvicorn`, `websockets`, `google-genai`, `prompt_toolkit`.
 - **Platform Libraries**:
     - **macOS**: `pyobjc` (AppKit), AppleScript.
     - **Windows**: `pywin32`, `psutil`.
+- **Audio**: `sounddevice`, `numpy`, `scipy` (Client-side recording).
 
 ## How to Operate
 

@@ -7,6 +7,7 @@ To add a new LLM provider (e.g., OpenAI, Anthropic):
 1.  Create a new file (e.g., `openai.py`).
 2.  Inherit from `LLMProvider` in `base.py`.
 3.  Implement the `generate` method.
+4.  Implement the `transcribe` method (optional, for Speech-to-Text).
 4.  **Configuration**: Use `app.config.settings` to access API keys and other settings. Add new keys to `app/config.py` and `.env` if needed.
 
 ## Prompt for AI Assistant

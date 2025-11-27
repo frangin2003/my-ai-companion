@@ -52,3 +52,9 @@ Sent when the user inputs text.
   }
 }
 ```
+
+### Binary Audio Message
+Sent when the user records audio (e.g., via `/record` command).
+- **Format**: Raw bytes (WAV/WebM).
+- **Server Action**: Transcribes audio using Gemini and processes it as a text message.
+
