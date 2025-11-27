@@ -28,6 +28,9 @@ from app.prompts.personas import PERSONA
 from app.prompts.app_instructions import get_app_instruction
 from app.config import settings
 
+IGNORED_APPS = ["Electron"]
+last_valid_app = "Unknown"
+
 # Configure Logging
 logging.basicConfig(
     level=logging.INFO,
@@ -71,10 +74,19 @@ async def monitor_loop():
     last_suggestion_time = 0
     suggestion_cooldown = settings.suggestion_cooldown
     
+    global last_valid_app
     while True:
         try:
             current_app = system_monitor.get_active_app_name()
             # logger.debug(f"Current App: {current_app}") # Verbose
+            
+            if current_app in IGNORED_APPS:
+                # If we are in an ignored app (like the companion itself), 
+                # we don't update the state or trigger events.
+                await asyncio.sleep(settings.monitor_interval)
+                continue
+                
+            last_valid_app = current_app
             
             if current_app != previous_app:
                 logger.info(f"App switch detected: {previous_app} -> {current_app}")
@@ -139,6 +151,10 @@ async def websocket_endpoint(websocket: WebSocket):
                 
                 # Get current context from the active app
                 current_app = system_monitor.get_active_app_name()
+                
+                if current_app in IGNORED_APPS:
+                    logger.info(f"Ignored app {current_app} active. Using last valid app: {last_valid_app}")
+                    current_app = last_valid_app
                 
                 if specialized_app.is_target_app(current_app):
                     context = specialized_app.get_context()
