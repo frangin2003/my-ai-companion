@@ -10,12 +10,10 @@ if sys.platform == "win32":
     from app.apps.excel import ExcelApp
     AppProviderClass = ExcelApp
     TARGET_APP_NAME = "Excel"
-    PERSONA_NAME = "excel_guru"
 elif sys.platform == "darwin":
     from app.apps.numbers import NumbersApp
     AppProviderClass = NumbersApp
     TARGET_APP_NAME = "Numbers"
-    PERSONA_NAME = "numbers_guru"
 else:
     # Fallback or error for unsupported OS
     from app.apps.base import AppProvider
@@ -25,8 +23,9 @@ else:
         def get_context(self): return "Unsupported OS"
     AppProviderClass = MockApp
     TARGET_APP_NAME = "Unknown"
-    PERSONA_NAME = "default"
-from app.prompts.personas import get_persona
+from app.apps.monitor import SystemMonitor
+from app.prompts.personas import PERSONA
+from app.prompts.app_instructions import get_app_instruction
 from app.config import settings
 
 # Configure Logging
@@ -62,7 +61,8 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 llm = GeminiLLM()
-app_monitor = AppProviderClass()
+system_monitor = SystemMonitor()
+specialized_app = AppProviderClass()
 
 async def monitor_loop():
     """Background task to monitor active app and emit events."""
@@ -73,18 +73,18 @@ async def monitor_loop():
     
     while True:
         try:
-            current_app = app_monitor.get_active_app_name()
+            current_app = system_monitor.get_active_app_name()
             # logger.debug(f"Current App: {current_app}") # Verbose
             
             if current_app != previous_app:
                 logger.info(f"App switch detected: {previous_app} -> {current_app}")
                 
-                if app_monitor.is_target_app(current_app):
+                if specialized_app.is_target_app(current_app):
                     current_time = asyncio.get_event_loop().time()
                     if current_time - last_suggestion_time >= suggestion_cooldown:
                         logger.info(f"Target app {current_app} active. Cooldown satisfied.")
                         
-                        context = app_monitor.get_context()
+                        context = specialized_app.get_context()
                         logger.info(f"Retrieved context: {context}")
                         
                         await manager.broadcast({
@@ -92,14 +92,17 @@ async def monitor_loop():
                             "data": {"context": f"User switched to {current_app}"}
                         })
                         
-                        persona = get_persona(PERSONA_NAME)
-                        prompt = persona["prompt_template"].format(
+                        # Use the single defined PERSONA
+                        app_instruction = get_app_instruction(current_app)
+                        
+                        system_prompt = f"{PERSONA['system_instruction']}\n\n{app_instruction}"
+                        user_prompt = app_instruction.format(
                             app_name=current_app,
                             context=context
                         )
                         
                         logger.info("Generating suggestion with LLM...")
-                        suggestion = llm.generate(prompt, persona["system_instruction"])
+                        suggestion = llm.generate(user_prompt, system_prompt)
                         logger.info(f"Generated suggestion: {suggestion}")
                         
                         await manager.broadcast({
@@ -134,9 +137,15 @@ async def websocket_endpoint(websocket: WebSocket):
                 user_message = data["data"]["content"]
                 logger.info(f"Received user message: {user_message}")
                 
-                # Get current context from the monitored app (Numbers) regardless of focus
-                # This ensures we get context even if the user is typing in the CLI
-                context = app_monitor.get_context()
+                # Get current context from the active app
+                current_app = system_monitor.get_active_app_name()
+                
+                if specialized_app.is_target_app(current_app):
+                    context = specialized_app.get_context()
+                else:
+                    window_title = system_monitor.get_active_window_title(current_app)
+                    context = f"Active Application: {current_app}, Window Title: {window_title}"
+                
                 logger.info(f"Retrieved context for user question: {context}")
                 
                 await manager.broadcast({
@@ -144,26 +153,22 @@ async def websocket_endpoint(websocket: WebSocket):
                     "data": {"context": "Processing user question..."}
                 })
                 
-                persona = get_persona("default")
                 # We want to use the 'numbers_guru' persona if we have valid context, 
                 # or at least pass the context to the default persona.
                 # Let's check if we have a valid document open.
-                if "No document open" not in context:
-                     persona = get_persona(PERSONA_NAME)
-                     prompt = persona["prompt_template"].format(
-                        app_name=TARGET_APP_NAME,
-                        context=context
-                    )
-                     # Append user input to the prompt since the template might not have it
-                     prompt += f"\n\nUser Question: {user_message}"
-                else:
-                    prompt = persona["prompt_template"].format(
-                        context=context,
-                        user_input=user_message
-                    )
+                # Use the active app for instructions
+                app_instruction = get_app_instruction(current_app)
+                
+                system_prompt = f"{PERSONA['system_instruction']}\n\n{app_instruction}"
+                
+                base_prompt = app_instruction.format(
+                   app_name=current_app,
+                   context=context
+                )
+                user_prompt = f"{base_prompt}\n\nUser Question: {user_message}"
                 
                 logger.info("Generating reply with LLM...")
-                response = llm.generate(prompt, persona["system_instruction"])
+                response = llm.generate(user_prompt, system_prompt)
                 logger.info(f"Generated reply: {response}")
                 
                 await manager.broadcast({

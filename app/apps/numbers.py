@@ -28,6 +28,7 @@ class NumbersApp(AppProvider):
         return app_name == "Numbers"
 
     def get_context(self) -> str:
+
         script = '''
         tell application "Numbers"
             if not (exists document 1) then return "No document open"

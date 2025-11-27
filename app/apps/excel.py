@@ -21,6 +21,7 @@ class ExcelApp(AppProvider):
         return app_name.lower() == "excel"
 
     def get_context(self) -> str:
+
         try:
             # Connect to active Excel instance
             # This requires Excel to be running
