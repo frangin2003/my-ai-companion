@@ -1,0 +1,48 @@
+body {
+    margin: 0;
+    overflow: hidden;
+    background-color: #222; /* Dark background to see white character better */
+    font-family: sans-serif;
+}
+
+#canvas-container {
+    width: 100%;
+    height: 100vh;
+    display: block;
+}
+
+#ui-container {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 15px;
+    border-radius: 8px;
+    color: white;
+    pointer-events: auto;
+    user-select: none;
+    min-width: 180px;
+    font-size: 14px;
+}
+
+#ui-container select,
+#ui-container input,
+#ui-container button {
+    font-size: 14px;
+}
+
+#ui-container button {
+    cursor: pointer;
+    background: #4a90d9;
+    border: none;
+    color: white;
+    border-radius: 4px;
+}
+
+#ui-container button:hover {
+    background: #3a7bc8;
+}
+
+canvas {
+    display: block;
+}

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kawaii SD Character</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #f0f0f0; }
+        #canvas-container { width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; }
+        #ui-container { position: absolute; top: 20px; left: 20px; background: rgba(255, 255, 255, 0.8); padding: 10px; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <div id="ui-container">
+        <label>
+            <input type="checkbox" id="debug-toggle"> Show Joints (Debug Mode)
+        </label>
+        
+        <hr style="margin: 10px 0; border-color: rgba(255,255,255,0.3);">
+        
+        <div style="margin-top: 10px;">
+            <label style="display: block; margin-bottom: 5px;">Expression:</label>
+            <select id="expression-select" style="width: 100%; padding: 5px;">
+                <optgroup label="Row 1">
+                    <option value="neutral">Neutral</option>
+                    <option value="happy">Happy</option>
+                    <option value="wink">Wink</option>
+                    <option value="sleepy">Sleepy</option>
+                    <option value="worried">Worried</option>
+                    <option value="surprised">Surprised</option>
+                    <option value="shocked">Shocked</option>
+                    <option value="angry">Angry</option>
+                </optgroup>
+                <optgroup label="Row 2">
+                    <option value="neutral2">Neutral 2</option>
+                    <option value="closed">Closed</option>
+                    <option value="squint">Squint</option>
+                    <option value="sad">Sad</option>
+                    <option value="cry">Cry</option>
+                    <option value="fear">Fear</option>
+                    <option value="annoyed">Annoyed</option>
+                    <option value="grumpy">Grumpy</option>
+                </optgroup>
+                <optgroup label="Row 3">
+                    <option value="talking1">Talking 1</option>
+                    <option value="talking2">Talking 2</option>
+                    <option value="excited">Excited</option>
+                    <option value="love">Love</option>
+                    <option value="sparkle">Sparkle</option>
+                    <option value="dizzy">Dizzy</option>
+                    <option value="smirk">Smirk</option>
+                    <option value="meh">Meh</option>
+                </optgroup>
+                <optgroup label="Row 4">
+                    <option value="talking3">Talking 3</option>
+                    <option value="bored">Bored</option>
+                    <option value="thinking">Thinking</option>
+                    <option value="confused">Confused</option>
+                    <option value="tired">Tired</option>
+                    <option value="dead">Dead</option>
+                    <option value="sassy">Sassy</option>
+                    <option value="rage">Rage</option>
+                </optgroup>
+            </select>
+        </div>
+        
+        <div style="margin-top: 10px;">
+            <label style="display: block; margin-bottom: 5px;">Grid Position:</label>
+            <div style="display: flex; gap: 5px;">
+                <input type="number" id="grid-col" min="0" max="7" value="0" style="width: 50px; padding: 5px;">
+                <input type="number" id="grid-row" min="0" max="3" value="0" style="width: 50px; padding: 5px;">
+                <button id="grid-btn" style="padding: 5px 10px;">Set</button>
+            </div>
+        </div>
+        
+        <div style="margin-top: 10px;">
+            <button id="talk-btn" style="width: 100%; padding: 8px;">Start Talking</button>
+        </div>
+    </div>
+    <div id="canvas-container"></div>
+
+    <!-- Import maps polyfill -->
+    <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+    
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module" src="main.js"></script>
+</body>
+</html>

@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Companion</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #f0f0f0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        #canvas-container {
+            flex-grow: 1;
+            position: relative;
+            width: 100%;
+        }
+        #ui-container {
+            height: 80px;
+            background-color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            flex-wrap: wrap;
+            padding: 0 10px;
+            z-index: 10;
+        }
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            background-color: #4a90e2;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s, background-color 0.2s;
+            font-size: 14px;
+        }
+        button:hover {
+            background-color: #357abd;
+            transform: scale(1.05);
+        }
+        button:active {
+            transform: scale(0.95);
+        }
+        button.active {
+            background-color: #2c3e50;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+    <div id="ui-container">
+        <button onclick="setState('idle')" id="btn-idle" class="active">Idle</button>
+        <button onclick="setState('speak')" id="btn-speak">Speak</button>
+        <button onclick="setState('laugh')" id="btn-laugh">Laugh</button>
+        <button onclick="setState('think')" id="btn-think">Think</button>
+        <button onclick="setState('sleep')" id="btn-sleep">Sleep</button>
+        <button onclick="setState('jump_of_joy')" id="btn-jump_of_joy">Jump of Joy</button>
+        <button onclick="setState('dance')" id="btn-dance">Dance</button>
+        <button onclick="setState('angry')" id="btn-angry">Angry</button>
+    </div>
+
+    <!-- Import Three.js via module -->
+    <script type="module">
+        import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+
+        // --- Scene Setup ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xeef2f5);
+        
+        // Camera
+        const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+        camera.position.set(0, 2, 8);
+        camera.lookAt(0, 0.5, 0);
+
+        // Renderer
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.shadowMap.enabled = true;
+        container.appendChild(renderer.domElement);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(5, 10, 7);
+        dirLight.castShadow = true;
+        scene.add(dirLight);
+
+        // --- Character Construction ---
+
+        const characterGroup = new THREE.Group();
+        scene.add(characterGroup);
+
+        // Materials
+        const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+        const bodyBlueMat = new THREE.MeshStandardMaterial({ color: 0x4a90e2, roughness: 0.4 });
+        const darkBlueMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50, roughness: 0.5 });
+        const blackMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        const highlightMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const gemMat = new THREE.MeshPhongMaterial({ color: 0x00ffff, emissive: 0x0044aa, shininess: 100 });
+        const blushMat = new THREE.MeshBasicMaterial({ color: 0xffaaaa, transparent: true, opacity: 0.5 });
+
+        // 1. Body (Egg shape)
+        const bodyGeo = new THREE.SphereGeometry(1, 32, 32);
+        const bodyMesh = new THREE.Mesh(bodyGeo, bodyBlueMat);
+        bodyMesh.scale.set(0.85, 1, 0.85);
+        bodyMesh.position.y = 0.8;
+        bodyMesh.castShadow = true;
+        characterGroup.add(bodyMesh);
+
+        // 2. Head
+        const headGroup = new THREE.Group();
+        headGroup.position.set(0, 1.6, 0); // Pivot at neck
+        characterGroup.add(headGroup);
+
+        const headGeo = new THREE.SphereGeometry(1.1, 32, 32);
+        const headMesh = new THREE.Mesh(headGeo, whiteMat);
+        headMesh.scale.set(1, 0.9, 0.95); // Slightly oval
+        headMesh.position.y = 0.6; // Offset from pivot
+        headMesh.castShadow = true;
+        headGroup.add(headMesh);
+
+        // 3. Eyes (Group for easy scaling/closing)
+        const leftEyeGroup = new THREE.Group();
+        const rightEyeGroup = new THREE.Group();
+        
+        const eyeGeo = new THREE.SphereGeometry(0.25, 32, 16);
+        // Flatten eyes slightly against head
+        eyeGeo.scale(1, 1, 0.6); 
+
+        const leftEyeMesh = new THREE.Mesh(eyeGeo, blackMat);
+        const rightEyeMesh = new THREE.Mesh(eyeGeo, blackMat);
+
+        // Highlights
+        const highlightGeo = new THREE.SphereGeometry(0.08, 16, 16);
+        const leftHighlight = new THREE.Mesh(highlightGeo, highlightMat);
+        leftHighlight.position.set(0.08, 0.08, 0.15);
+        const rightHighlight = new THREE.Mesh(highlightGeo, highlightMat);
+        rightHighlight.position.set(0.08, 0.08, 0.15);
+
+        leftEyeMesh.add(leftHighlight);
+        rightEyeMesh.add(rightHighlight);
+
+        leftEyeGroup.add(leftEyeMesh);
+        rightEyeGroup.add(rightEyeMesh);
+
+        // Position eyes on head
+        leftEyeGroup.position.set(-0.4, 0.6, 0.95);
+        rightEyeGroup.position.set(0.4, 0.6, 0.95);
+        
+        // Rotate slightly to follow head curvature
+        leftEyeGroup.rotation.y = -0.2;
+        rightEyeGroup.rotation.y = 0.2;
+
+        headGroup.add(leftEyeGroup);
+        headGroup.add(rightEyeGroup);
+
+        // 4. Eyebrows (for Angry state)
+        const browGeo = new THREE.CapsuleGeometry(0.05, 0.3, 4, 8);
+        const leftBrow = new THREE.Mesh(browGeo, blackMat);
+        const rightBrow = new THREE.Mesh(browGeo, blackMat);
+        
+        leftBrow.rotation.z = Math.PI / 2;
+        rightBrow.rotation.z = Math.PI / 2;
+        
+        leftBrow.position.set(-0.4, 1.0, 0.9);
+        rightBrow.position.set(0.4, 1.0, 0.9);
+
+        leftBrow.visible = false;
+        rightBrow.visible = false;
+
+        headGroup.add(leftBrow);
+        headGroup.add(rightBrow);
+
+        // 5. Mouth
+        const mouthGeo = new THREE.CapsuleGeometry(0.08, 0.1, 4, 8);
+        mouthGeo.rotateZ(Math.PI / 2); // Horizontal default
+        const mouthMesh = new THREE.Mesh(mouthGeo, blackMat);
+        mouthMesh.position.set(0, 0.25, 1.02);
+        headGroup.add(mouthMesh);
+
+        // 6. Floating Gem
+        const gemGeo = new THREE.OctahedronGeometry(0.2);
+        const gemMesh = new THREE.Mesh(gemGeo, gemMat);
+        gemMesh.position.set(0, 2.0, 0); // Relative to head group
+        headGroup.add(gemMesh);
+
+        // 7. Limbs
+        // Arms logic: Pivot point at shoulder
+        const armGeo = new THREE.CapsuleGeometry(0.12, 0.6, 4, 8);
+        
+        // Left Arm
+        const leftArmGroup = new THREE.Group();
+        leftArmGroup.position.set(-0.8, 1.1, 0);
+        const leftArmMesh = new THREE.Mesh(armGeo, bodyBlueMat);
+        leftArmMesh.position.y = -0.3; // Hang down from pivot
+        leftArmGroup.add(leftArmMesh);
+        characterGroup.add(leftArmGroup);
+
+        // Right Arm
+        const rightArmGroup = new THREE.Group();
+        rightArmGroup.position.set(0.8, 1.1, 0);
+        const rightArmMesh = new THREE.Mesh(armGeo, bodyBlueMat);
+        rightArmMesh.position.y = -0.3; // Hang down from pivot
+        rightArmGroup.add(rightArmMesh);
+        characterGroup.add(rightArmGroup);
+
+        // Legs
+        const legGeo = new THREE.CapsuleGeometry(0.13, 0.4, 4, 8);
+        const leftLeg = new THREE.Mesh(legGeo, darkBlueMat);
+        leftLeg.position.set(-0.3, 0.2, 0);
+        characterGroup.add(leftLeg);
+
+        const rightLeg = new THREE.Mesh(legGeo, darkBlueMat);
+        rightLeg.position.set(0.3, 0.2, 0);
+        characterGroup.add(rightLeg);
+
+        // Sleep ZZZ particles (simple boxes)
+        const zGroup = new THREE.Group();
+        const zGeo = new THREE.BoxGeometry(0.1, 0.02, 0.02); // horizontal stroke
+        const zGeo2 = new THREE.BoxGeometry(0.12, 0.02, 0.02); // diagonal
+        // Create a "Z" shape mesh manually
+        function createZ() {
+            const g = new THREE.Group();
+            const top = new THREE.Mesh(zGeo, whiteMat); top.position.set(0, 0.05, 0);
+            const bot = new THREE.Mesh(zGeo, whiteMat); bot.position.set(0, -0.05, 0);
+            const diag = new THREE.Mesh(zGeo2, whiteMat); 
+            diag.rotation.z = Math.PI / 4;
+            g.add(top, bot, diag);
+            return g;
+        }
+        const z1 = createZ(); z1.position.set(0.8, 1.5, 0.5);
+        const z2 = createZ(); z2.position.set(1.0, 1.8, 0.5); z2.scale.set(1.2,1.2,1.2);
+        zGroup.add(z1, z2);
+        zGroup.visible = false;
+        headGroup.add(zGroup);
+
+
+        // --- Animation State Machine ---
+
+        let currentState = 'idle';
+        window.setState = function(state) {
+            currentState = state;
+            
+            // UI Update
+            document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+            document.getElementById(`btn-${state}`).classList.add('active');
+
+            // Reset immediate transforms that might get stuck
+            leftBrow.visible = false;
+            rightBrow.visible = false;
+            zGroup.visible = false;
+            mouthMesh.scale.set(1, 1, 1);
+            mouthMesh.rotation.z = 0;
+        };
+
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const delta = clock.getDelta(); // Time since last frame
+            const time = clock.getElapsedTime(); // Total time
+
+            // Base Reset / Interpolation targets
+            let targetHeadRotX = 0;
+            let targetHeadRotY = 0;
+            let targetHeadRotZ = 0;
+            let targetBodyY = 0;
+            let targetBodyRotZ = 0;
+            let targetArmLRotZ = 0; // Resting
+            let targetArmRRotZ = 0; // Resting
+            let eyeScaleY = 1.0;
+            
+            // --- State Logic ---
+
+            if (currentState === 'idle') {
+                // Breathing
+                targetBodyY = Math.sin(time * 2) * 0.03;
+                targetArmLRotZ = Math.sin(time * 2 + 1) * 0.05;
+                targetArmRRotZ = -Math.sin(time * 2 + 1) * 0.05;
+                // Eye blink
+                if (time % 5 > 4.8) eyeScaleY = 0.1; 
+
+            } else if (currentState === 'speak') {
+                targetBodyY = Math.sin(time * 5) * 0.01;
+                // Mouth flapping
+                const speakCycle = Math.sin(time * 15);
+                mouthMesh.scale.y = 0.5 + Math.abs(speakCycle) * 3; // Open/Close vertical
+                mouthMesh.scale.x = 0.8 + Math.abs(Math.cos(time * 10)) * 0.4; 
+                
+                // Head bob
+                targetHeadRotX = Math.sin(time * 8) * 0.05;
+
+                // Gesturing arms
+                targetArmLRotZ = Math.sin(time * 4) * 0.2 + 0.2;
+                targetArmRRotZ = Math.cos(time * 3) * 0.2 - 0.2;
+
+            } else if (currentState === 'laugh') {
+                // Fast bouncing
+                targetBodyY = Math.abs(Math.sin(time * 10)) * 0.1;
+                targetHeadRotX = -0.2; // Tilt back slightly
+                
+                // Mouth wide open
+                mouthMesh.scale.set(2.0, 2.5, 1);
+                
+                // Arms shaking
+                targetArmLRotZ = Math.sin(time * 20) * 0.1 + 0.5; // Hands up
+                targetArmRRotZ = -Math.sin(time * 20) * 0.1 - 0.5;
+                
+                // Squint eyes
+                eyeScaleY = 0.1; // Closed/squinted happy eyes
+
+            } else if (currentState === 'think') {
+                targetHeadRotZ = 0.3; // Tilt head side
+                targetHeadRotX = 0.2; // Look down slightly
+                
+                // Hand to chin
+                targetArmRRotZ = -2.5; // Rotate arm up
+                rightArmGroup.rotation.x = 0.5; // Move forward a bit (simple hack)
+                
+                // Slower breathing
+                targetBodyY = Math.sin(time) * 0.02;
+                
+                // Mouth small "o"
+                mouthMesh.scale.set(0.5, 0.5, 1);
+
+            } else if (currentState === 'sleep') {
+                eyeScaleY = 0.05; // Closed
+                targetHeadRotX = 0.3; // Head droop
+                targetBodyY = Math.sin(time * 1) * 0.02; // Slow breath
+                
+                zGroup.visible = true;
+                zGroup.position.y = 1.6 + Math.sin(time)*0.1;
+                zGroup.children[0].position.x = Math.sin(time * 2) * 0.1; // Float effect
+
+            } else if (currentState === 'jump_of_joy') {
+                // Big jump
+                const jumpCycle = Math.abs(Math.sin(time * 4));
+                targetBodyY = jumpCycle * 0.5;
+                
+                // Squash and stretch
+                if (jumpCycle < 0.1) {
+                    // Landing squash
+                    bodyMesh.scale.set(1.1, 0.8, 1.1);
+                } else {
+                    // Air stretch
+                    bodyMesh.scale.set(0.85, 1.1, 0.85);
+                }
+
+                // Arms up high
+                targetArmLRotZ = 2.5; 
+                targetArmRRotZ = -2.5;
+                
+                // Mouth happy
+                mouthMesh.scale.set(1.5, 1.5, 1);
+
+            } else if (currentState === 'dance') {
+                const beat = time * 8;
+                // Side to side
+                characterGroup.position.x = Math.sin(beat/2) * 0.3;
+                targetBodyRotZ = Math.sin(beat/2) * 0.1;
+                
+                // Arm wave
+                targetArmLRotZ = Math.sin(beat) * 1.5;
+                targetArmRRotZ = Math.cos(beat) * 1.5;
+                
+                // Head bob
+                targetHeadRotX = Math.abs(Math.sin(beat)) * 0.1;
+                
+                mouthMesh.scale.set(1.2, 0.8, 1);
+
+            } else if (currentState === 'angry') {
+                // Brows visible
+                leftBrow.visible = true;
+                rightBrow.visible = true;
+                // Angle brows
+                leftBrow.rotation.z = 0.8; // /
+                rightBrow.rotation.z = 2.3; // \
+                
+                // Shake
+                const shake = Math.sin(time * 30) * 0.02;
+                characterGroup.position.x = shake;
+                
+                // Mouth flat or frown
+                mouthMesh.scale.set(1.2, 0.3, 1);
+                
+                // Stiff arms
+                targetArmLRotZ = 0.5;
+                targetArmRRotZ = -0.5;
+            }
+
+            // --- Apply Transforms with Smoothness (Lerp) ---
+            // Helper for smoothing
+            const lerp = (current, target, speed) => current + (target - current) * speed;
+
+            // Reset character group position X (handled in dance/angry directly, otherwise 0)
+            if (currentState !== 'dance' && currentState !== 'angry') {
+                characterGroup.position.x = lerp(characterGroup.position.x, 0, 0.1);
+            }
+
+            // Body Position Y
+            characterGroup.position.y = lerp(characterGroup.position.y, targetBodyY, 0.1);
+            
+            // Body Rotation Z (for dance)
+            characterGroup.rotation.z = lerp(characterGroup.rotation.z, targetBodyRotZ, 0.1);
+
+            // Head Rotation
+            headGroup.rotation.x = lerp(headGroup.rotation.x, targetHeadRotX, 0.1);
+            headGroup.rotation.y = lerp(headGroup.rotation.y, targetHeadRotY, 0.1);
+            headGroup.rotation.z = lerp(headGroup.rotation.z, targetHeadRotZ, 0.1);
+
+            // Arms
+            // Reset extra arm rotations (like thinking forward tilt) if not thinking
+            if (currentState !== 'think') rightArmGroup.rotation.x = lerp(rightArmGroup.rotation.x, 0, 0.1);
+            
+            leftArmGroup.rotation.z = lerp(leftArmGroup.rotation.z, targetArmLRotZ, 0.1);
+            rightArmGroup.rotation.z = lerp(rightArmGroup.rotation.z, targetArmRRotZ, 0.1);
+
+            // Eyes
+            const currentScaleY = leftEyeMesh.scale.y;
+            const newScaleY = lerp(currentScaleY, eyeScaleY, 0.2);
+            leftEyeMesh.scale.y = newScaleY;
+            rightEyeMesh.scale.y = newScaleY;
+
+            // Floating Gem Animation (Always floats)
+            gemMesh.position.y = 2.0 + Math.sin(time * 2) * 0.1;
+            gemMesh.rotation.y += 0.02;
+            gemMesh.rotation.x += 0.01;
+
+            renderer.render(scene, camera);
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>

@@ -66,7 +66,7 @@ characterGroup.add(body);
 // Head sits on top of body.
 const headGeo = new THREE.SphereGeometry(0.9, 32, 32);
 // Flatten slightly? The image head looks quite round but maybe slightly wide.
-headGeo.applyMatrix4(new THREE.Matrix4().makeScale(1.1, 1, 1));
+headGeo.applyMatrix4(new THREE.Matrix4().makeScale(1.25, 0.9, 0.9)); 
 const head = new THREE.Mesh(headGeo, whiteMat);
 head.position.y = 0.9; // Relative to body center? No, let's parent to body for easier movement or keep separate. 
 // If we parent to body, head rotates with body. Let's attach to characterGroup and sync positions or parent to body.
@@ -79,12 +79,12 @@ head.position.set(0, 1.0, 0); // On top of the body capsule
 const hornGeo = new THREE.ConeGeometry(0.15, 0.8, 16);
 // Curve fix: Just a straight cone for now, titled outward
 const hornLeft = new THREE.Mesh(hornGeo, whiteMat);
-hornLeft.position.set(0.6, 0.7, 0);
+hornLeft.position.set(0.7, 0.6, 0); // Slightly closer than before
 hornLeft.rotation.z = -Math.PI / 6;
 head.add(hornLeft);
 
 const hornRight = new THREE.Mesh(hornGeo, whiteMat);
-hornRight.position.set(-0.6, 0.7, 0);
+hornRight.position.set(-0.7, 0.6, 0); // Slightly closer
 hornRight.rotation.z = Math.PI / 6;
 head.add(hornRight);
 
@@ -96,14 +96,18 @@ head.add(diamond);
 
 // 5. Eyes (Black, Large Oval)
 const eyeGeo = new THREE.SphereGeometry(0.22, 32, 32);
+
 const eyeLeft = new THREE.Mesh(eyeGeo, blackMat);
-eyeLeft.position.set(0.35, 0.1, 0.85);
-eyeLeft.scale.set(0.8, 1.2, 0.5); // Oval vertical
+// Position calculated to be on the surface of the head (approx Z=0.8 at this X/Y for new scale)
+eyeLeft.position.set(0.42, 0.1, 0.8); 
+eyeLeft.rotation.y = 0.5; // Rotate slightly outward
+eyeLeft.scale.set(0.8, 1.2, 0.25); 
 head.add(eyeLeft);
 
 const eyeRight = new THREE.Mesh(eyeGeo, blackMat);
-eyeRight.position.set(-0.35, 0.1, 0.85);
-eyeRight.scale.set(0.8, 1.2, 0.5);
+eyeRight.position.set(-0.42, 0.1, 0.8);
+eyeRight.rotation.y = -0.5; // Rotate slightly outward
+eyeRight.scale.set(0.8, 1.2, 0.25);
 head.add(eyeRight);
 
 // Highlights
@@ -116,13 +120,21 @@ const shineRight = new THREE.Mesh(shineGeo, whiteMat);
 shineRight.position.set(0.1, 0.1, 0.2);
 eyeRight.add(shineRight);
 
-// 6. Mouth (Small smile)
-// Half torus
-const mouthGeo = new THREE.TorusGeometry(0.08, 0.03, 16, 32, Math.PI);
+// 6. Mouth (Custom Shape - D shape for open smile)
+const mouthShape = new THREE.Shape();
+// Start top left
+mouthShape.moveTo(-0.15, 0.05);
+// Curve down to bottom center, then up to top right
+mouthShape.quadraticCurveTo(0, -0.25, 0.15, 0.05);
+// Curve top slightly down/flat to close
+mouthShape.quadraticCurveTo(0, 0, -0.15, 0.05);
+
+const mouthGeo = new THREE.ShapeGeometry(mouthShape);
 const mouth = new THREE.Mesh(mouthGeo, blackMat);
-mouth.rotation.x = Math.PI; // Face front?
-mouth.rotation.z = Math.PI; // Smile curve up
-mouth.position.set(0, -0.25, 0.95);
+// Position calculated to be on surface (approx Z=0.83 for new scale)
+mouth.position.set(0, -0.2, 0.83); 
+// Slight rotation x to match chin curve
+mouth.rotation.x = -0.1; 
 head.add(mouth);
 
 // 7. Arms (Blue, Tiny, spread out)
@@ -165,12 +177,12 @@ function resetPose() {
     diamond.position.set(0, 1.4, 0);
     
     // Reset expression
-    mouth.scale.set(1, 1, 1);
-    mouth.rotation.z = Math.PI; 
+    mouth.scale.set(1, 0.3, 1); // Default small smile
+    mouth.rotation.set(0, 0, 0); // Reset rotation
     
     // Reset eyes
-    eyeLeft.scale.set(0.8, 1.2, 0.5);
-    eyeRight.scale.set(0.8, 1.2, 0.5);
+    eyeLeft.scale.set(0.8, 1.2, 0.25);
+    eyeRight.scale.set(0.8, 1.2, 0.25);
     
     // Reset colors
     head.material.color.setHex(COLOR_WHITE);
@@ -203,7 +215,8 @@ function animate() {
             // Bobbing
             body.position.y = 0.9 + Math.sin(time * 10) * 0.02;
             // Mouth flap
-            mouth.scale.y = 0.5 + Math.sin(time * 15) * 0.5;
+            const talkScale = 0.5 + Math.abs(Math.sin(time * 15)) * 0.5;
+            mouth.scale.set(1, talkScale, 1);
             break;
 
         case 'laugh':
@@ -214,6 +227,8 @@ function animate() {
             // Arms shake
             armLeft.rotation.z = -Math.PI / 3 + Math.sin(time * 20) * 0.2;
             armRight.rotation.z = Math.PI / 3 - Math.sin(time * 20) * 0.2;
+            // Big open mouth
+            mouth.scale.set(1.2, 1.5, 1);
             break;
 
         case 'think':
@@ -273,6 +288,10 @@ function animate() {
             // Arms rigid down
             armLeft.rotation.z = 0;
             armRight.rotation.z = 0;
+            // Frown (rotate mouth 180)
+            mouth.rotation.z = Math.PI;
+            mouth.rotation.x = 0.1; // Invert tilt
+            mouth.position.y = -0.35; // Adjust position for frown
             break;
     }
 
@@ -287,4 +306,3 @@ window.addEventListener('resize', () => {
 });
 
 animate();
-
