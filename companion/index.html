@@ -5,79 +5,107 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kawaii SD Character</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        body { margin: 0; overflow: hidden; background-color: #f0f0f0; }
-        #canvas-container { width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; }
-        #ui-container { position: absolute; top: 20px; left: 20px; background: rgba(255, 255, 255, 0.8); padding: 10px; border-radius: 8px; }
-    </style>
 </head>
 <body>
-    <div id="ui-container">
-        <label>
-            <input type="checkbox" id="debug-toggle"> Show Joints (Debug Mode)
-        </label>
+    <!-- Waveform Visualization (Feature 3) - Shows when recording -->
+    <div id="waveform-container">
+        <canvas id="waveform-canvas"></canvas>
+    </div>
+    
+    <!-- Bottom Controls - Below Avatar -->
+    <div id="bottom-controls">
+        <!-- Toggle Text Input Button -->
+        <button id="toggle-textbox-btn" class="toggle-btn" title="Toggle text input (T)">
+            <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+            <span>Chat</span>
+        </button>
         
-        <hr style="margin: 10px 0; border-color: rgba(255,255,255,0.3);">
-        
-        <div style="margin-top: 10px;">
-            <label style="display: block; margin-bottom: 5px;">Expression:</label>
-            <select id="expression-select" style="width: 100%; padding: 5px;">
-                <optgroup label="Row 1">
-                    <option value="neutral">Neutral</option>
-                    <option value="happy">Happy</option>
-                    <option value="wink">Wink</option>
-                    <option value="sleepy">Sleepy</option>
-                    <option value="worried">Worried</option>
-                    <option value="surprised">Surprised</option>
-                    <option value="shocked">Shocked</option>
-                    <option value="angry">Angry</option>
-                </optgroup>
-                <optgroup label="Row 2">
-                    <option value="neutral2">Neutral 2</option>
-                    <option value="closed">Closed</option>
-                    <option value="squint">Squint</option>
-                    <option value="sad">Sad</option>
-                    <option value="cry">Cry</option>
-                    <option value="fear">Fear</option>
-                    <option value="annoyed">Annoyed</option>
-                    <option value="grumpy">Grumpy</option>
-                </optgroup>
-                <optgroup label="Row 3">
-                    <option value="talking1">Talking 1</option>
-                    <option value="talking2">Talking 2</option>
-                    <option value="excited">Excited</option>
-                    <option value="love">Love</option>
-                    <option value="sparkle">Sparkle</option>
-                    <option value="dizzy">Dizzy</option>
-                    <option value="smirk">Smirk</option>
-                    <option value="meh">Meh</option>
-                </optgroup>
-                <optgroup label="Row 4">
-                    <option value="talking3">Talking 3</option>
-                    <option value="bored">Bored</option>
-                    <option value="thinking">Thinking</option>
-                    <option value="confused">Confused</option>
-                    <option value="tired">Tired</option>
-                    <option value="dead">Dead</option>
-                    <option value="sassy">Sassy</option>
-                    <option value="rage">Rage</option>
-                </optgroup>
-            </select>
+        <!-- Text Input (Hidden by default) -->
+        <div id="text-input-container" class="hidden">
+            <input type="text" id="text-input" placeholder="Type a message... (Enter to send)" autocomplete="off">
+            <button id="send-text-btn" class="comm-btn send-btn" title="Send message">
+                <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            </button>
         </div>
         
-        <div style="margin-top: 10px;">
-            <label style="display: block; margin-bottom: 5px;">Grid Position:</label>
-            <div style="display: flex; gap: 5px;">
-                <input type="number" id="grid-col" min="0" max="7" value="0" style="width: 50px; padding: 5px;">
-                <input type="number" id="grid-row" min="0" max="3" value="0" style="width: 50px; padding: 5px;">
-                <button id="grid-btn" style="padding: 5px 10px;">Set</button>
+        <!-- PTT Hint -->
+        <div class="ptt-hint">
+            <span class="key-hint">Right Shift</span> to talk
+        </div>
+    </div>
+    
+    <div id="ui-panel">
+        <h2>🎭 Avatar Controls</h2>
+        
+        <div class="section">
+            <label class="checkbox-label">
+                <input type="checkbox" id="debug-toggle"> 
+                <span>Debug Mode</span>
+            </label>
+        </div>
+        
+        <div class="section">
+            <h3>Expressions</h3>
+            <div class="expression-grid">
+                <!-- Row 0 -->
+                <label class="expression-label"><input type="radio" name="expression" value="neutral" checked><span class="face-preview" data-col="0" data-row="0"></span></label>
+                <label class="expression-label"><input type="radio" name="expression" value="happy"><span class="face-preview" data-col="1" data-row="0"></span></label>
+                <label class="expression-label"><input type="radio" name="expression" value="wink"><span class="face-preview" data-col="2" data-row="0"></span></label>
+                <label class="expression-label"><input type="radio" name="expression" value="sleepy"><span class="face-preview" data-col="3" data-row="0"></span></label>
+                <label class="expression-label"><input type="radio" name="expression" value="worried"><span class="face-preview" data-col="4" data-row="0"></span></label>
+                <label class="expression-label"><input type="radio" name="expression" value="surprised"><span class="face-preview" data-col="5" data-row="0"></span></label>
+                <label class="expression-label"><input type="radio" name="expression" value="shocked"><span class="face-preview" data-col="6" data-row="0"></span></label>
+                <label class="expression-label"><input type="radio" name="expression" value="angry"><span class="face-preview" data-col="7" data-row="0"></span></label>
+                <!-- Row 1 -->
+                <label class="expression-label"><input type="radio" name="expression" value="neutral2"><span class="face-preview" data-col="0" data-row="1"></span></label>
+                <label class="expression-label"><input type="radio" name="expression" value="closed"><span class="face-preview" data-col="1" data-row="1"></span></label>
+                <label class="expression-label"><input type="radio" name="expression" value="squint"><span class="face-preview" data-col="2" data-row="1"></span></label>
+                <label class="expression-label"><input type="radio" name="expression" value="sad"><span class="face-preview" data-col="3" data-row="1"></span></label>
+                <label class="expression-label"><input type="radio" name="expression" value="cry"><span class="face-preview" data-col="4" data-row="1"></span></label>
+                <label class="expression-label"><input type="radio" name="expression" value="fear"><span class="face-preview" data-col="5" data-row="1"></span></label>
+                <label class="expression-label"><input type="radio" name="expression" value="annoyed"><span class="face-preview" data-col="6" data-row="1"></span></label>
+                <label class="expression-label"><input type="radio" name="expression" value="grumpy"><span class="face-preview" data-col="7" data-row="1"></span></label>
+                <!-- Row 2 -->
+                <label class="expression-label"><input type="radio" name="expression" value="talking1"><span class="face-preview" data-col="0" data-row="2"></span></label>
+                <label class="expression-label"><input type="radio" name="expression" value="talking2"><span class="face-preview" data-col="1" data-row="2"></span></label>
+                <label class="expression-label"><input type="radio" name="expression" value="excited"><span class="face-preview" data-col="2" data-row="2"></span></label>
+                <label class="expression-label"><input type="radio" name="expression" value="love"><span class="face-preview" data-col="3" data-row="2"></span></label>
+                <label class="expression-label"><input type="radio" name="expression" value="sparkle"><span class="face-preview" data-col="4" data-row="2"></span></label>
+                <label class="expression-label"><input type="radio" name="expression" value="dizzy"><span class="face-preview" data-col="5" data-row="2"></span></label>
+                <label class="expression-label"><input type="radio" name="expression" value="smirk"><span class="face-preview" data-col="6" data-row="2"></span></label>
+                <label class="expression-label"><input type="radio" name="expression" value="meh"><span class="face-preview" data-col="7" data-row="2"></span></label>
+                <!-- Row 3 -->
+                <label class="expression-label"><input type="radio" name="expression" value="talking3"><span class="face-preview" data-col="0" data-row="3"></span></label>
+                <label class="expression-label"><input type="radio" name="expression" value="bored"><span class="face-preview" data-col="1" data-row="3"></span></label>
+                <label class="expression-label"><input type="radio" name="expression" value="thinking"><span class="face-preview" data-col="2" data-row="3"></span></label>
+                <label class="expression-label"><input type="radio" name="expression" value="confused"><span class="face-preview" data-col="3" data-row="3"></span></label>
+                <label class="expression-label"><input type="radio" name="expression" value="tired"><span class="face-preview" data-col="4" data-row="3"></span></label>
+                <label class="expression-label"><input type="radio" name="expression" value="dead"><span class="face-preview" data-col="5" data-row="3"></span></label>
+                <label class="expression-label"><input type="radio" name="expression" value="sassy"><span class="face-preview" data-col="6" data-row="3"></span></label>
+                <label class="expression-label"><input type="radio" name="expression" value="rage"><span class="face-preview" data-col="7" data-row="3"></span></label>
             </div>
         </div>
         
-        <div style="margin-top: 10px;">
-            <button id="talk-btn" style="width: 100%; padding: 8px;">Start Talking</button>
+        <div class="section">
+            <button id="talk-btn" class="talk-button">🗣️ Start Talking</button>
+        </div>
+        
+        <div class="section">
+            <h3>Animations</h3>
+            <div class="anim-grid">
+                <button class="anim-btn active" data-anim="idle">😊 Idle</button>
+                <button class="anim-btn" data-anim="dance">💃 Dance</button>
+                <button class="anim-btn" data-anim="yata">🎉 Yata!</button>
+                <button class="anim-btn" data-anim="sleep">😴 Sleep</button>
+                <button class="anim-btn" data-anim="walk">🚶 Walk</button>
+                <button class="anim-btn" data-anim="run">🏃 Run</button>
+                <button class="anim-btn" data-anim="float">✨ Float</button>
+                <button class="anim-btn" data-anim="roll">🩰 Spin</button>
+                <button class="anim-btn" data-anim="wave">👋 Wave</button>
+            </div>
         </div>
     </div>
+    
     <div id="canvas-container"></div>
 
     <!-- Import maps polyfill -->

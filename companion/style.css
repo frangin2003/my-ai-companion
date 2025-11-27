@@ -1,48 +1,564 @@
+* {
+    box-sizing: border-box;
+}
+
 body {
     margin: 0;
     overflow: hidden;
-    background-color: #222; /* Dark background to see white character better */
-    font-family: sans-serif;
+    background-color: transparent; /* Transparent for Electron overlay */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 #canvas-container {
     width: 100%;
     height: 100vh;
     display: block;
+    position: relative;
+    z-index: 10;
+    pointer-events: none; /* Allow clicks to pass through to controls */
 }
 
-#ui-container {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    background: rgba(0, 0, 0, 0.7);
-    padding: 15px;
-    border-radius: 8px;
-    color: white;
-    pointer-events: auto;
-    user-select: none;
-    min-width: 180px;
-    font-size: 14px;
-}
-
-#ui-container select,
-#ui-container input,
-#ui-container button {
-    font-size: 14px;
-}
-
-#ui-container button {
-    cursor: pointer;
-    background: #4a90d9;
-    border: none;
-    color: white;
-    border-radius: 4px;
-}
-
-#ui-container button:hover {
-    background: #3a7bc8;
+#canvas-container canvas {
+    pointer-events: auto; /* But canvas itself captures events for dragging */
 }
 
 canvas {
     display: block;
+}
+
+/* UI Panel - positioned to the left, not overlapping avatar */
+#ui-panel {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    bottom: 20px;
+    width: 260px;
+    background: linear-gradient(135deg, #2d2d44 0%, #1a1a2e 100%);
+    border-radius: 16px;
+    padding: 20px;
+    color: #e0e0e0;
+    overflow-y: auto;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* When panel is visible, shift the canvas/avatar to the right */
+#canvas-container.panel-open {
+    margin-left: 290px;
+    width: calc(100% - 290px);
+}
+
+#ui-panel h2 {
+    margin: 0 0 20px 0;
+    font-size: 1.4em;
+    color: #fff;
+    text-align: center;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#ui-panel h3 {
+    margin: 0 0 12px 0;
+    font-size: 0.9em;
+    color: #a0a0b0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.section {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+/* Checkbox */
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.checkbox-label:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #4a90d9;
+}
+
+/* Expression Grid with Face Previews */
+.expression-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 4px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.expression-grid::-webkit-scrollbar {
+    width: 6px;
+}
+
+.expression-grid::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+}
+
+.expression-grid::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+.expression-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 2px solid transparent;
+}
+
+.expression-label:hover {
+    background: rgba(74, 144, 217, 0.15);
+    border-color: rgba(74, 144, 217, 0.3);
+    transform: scale(1.05);
+}
+
+.expression-label:has(input:checked) {
+    background: rgba(74, 144, 217, 0.25);
+    border-color: #4a90d9;
+    box-shadow: 0 0 10px rgba(74, 144, 217, 0.5);
+}
+
+.expression-label input[type="radio"] {
+    display: none;
+}
+
+.face-preview {
+    display: block;
+    width: 28px;
+    height: 28px;
+    background-image: url('face.png');
+    background-size: 800% 400%; /* 8 cols x 4 rows */
+    border-radius: 4px;
+}
+
+/* Position each face preview based on data attributes */
+.face-preview[data-col="0"][data-row="0"] { background-position: 0% 0%; }
+.face-preview[data-col="1"][data-row="0"] { background-position: 14.285% 0%; }
+.face-preview[data-col="2"][data-row="0"] { background-position: 28.571% 0%; }
+.face-preview[data-col="3"][data-row="0"] { background-position: 42.857% 0%; }
+.face-preview[data-col="4"][data-row="0"] { background-position: 57.142% 0%; }
+.face-preview[data-col="5"][data-row="0"] { background-position: 71.428% 0%; }
+.face-preview[data-col="6"][data-row="0"] { background-position: 85.714% 0%; }
+.face-preview[data-col="7"][data-row="0"] { background-position: 100% 0%; }
+
+.face-preview[data-col="0"][data-row="1"] { background-position: 0% 33.333%; }
+.face-preview[data-col="1"][data-row="1"] { background-position: 14.285% 33.333%; }
+.face-preview[data-col="2"][data-row="1"] { background-position: 28.571% 33.333%; }
+.face-preview[data-col="3"][data-row="1"] { background-position: 42.857% 33.333%; }
+.face-preview[data-col="4"][data-row="1"] { background-position: 57.142% 33.333%; }
+.face-preview[data-col="5"][data-row="1"] { background-position: 71.428% 33.333%; }
+.face-preview[data-col="6"][data-row="1"] { background-position: 85.714% 33.333%; }
+.face-preview[data-col="7"][data-row="1"] { background-position: 100% 33.333%; }
+
+.face-preview[data-col="0"][data-row="2"] { background-position: 0% 66.666%; }
+.face-preview[data-col="1"][data-row="2"] { background-position: 14.285% 66.666%; }
+.face-preview[data-col="2"][data-row="2"] { background-position: 28.571% 66.666%; }
+.face-preview[data-col="3"][data-row="2"] { background-position: 42.857% 66.666%; }
+.face-preview[data-col="4"][data-row="2"] { background-position: 57.142% 66.666%; }
+.face-preview[data-col="5"][data-row="2"] { background-position: 71.428% 66.666%; }
+.face-preview[data-col="6"][data-row="2"] { background-position: 85.714% 66.666%; }
+.face-preview[data-col="7"][data-row="2"] { background-position: 100% 66.666%; }
+
+.face-preview[data-col="0"][data-row="3"] { background-position: 0% 100%; }
+.face-preview[data-col="1"][data-row="3"] { background-position: 14.285% 100%; }
+.face-preview[data-col="2"][data-row="3"] { background-position: 28.571% 100%; }
+.face-preview[data-col="3"][data-row="3"] { background-position: 42.857% 100%; }
+.face-preview[data-col="4"][data-row="3"] { background-position: 57.142% 100%; }
+.face-preview[data-col="5"][data-row="3"] { background-position: 71.428% 100%; }
+.face-preview[data-col="6"][data-row="3"] { background-position: 85.714% 100%; }
+.face-preview[data-col="7"][data-row="3"] { background-position: 100% 100%; }
+
+/* Grid Controls */
+.grid-controls {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+.grid-input {
+    flex: 1;
+}
+
+.grid-input label {
+    display: block;
+    font-size: 0.75em;
+    color: #888;
+    margin-bottom: 5px;
+}
+
+.grid-input input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+    font-size: 0.9em;
+}
+
+.grid-input input:focus {
+    outline: none;
+    border-color: #4a90d9;
+}
+
+#grid-btn {
+    padding: 8px 16px;
+    background: #4a90d9;
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 0.85em;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+#grid-btn:hover {
+    background: #3a7bc8;
+}
+
+/* Talk Button */
+.talk-button {
+    width: 100%;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, #4a90d9 0%, #357abd 100%);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 15px rgba(74, 144, 217, 0.3);
+}
+
+.talk-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(74, 144, 217, 0.4);
+}
+
+.talk-button:active {
+    transform: translateY(0);
+}
+
+.talk-button.talking {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+}
+
+/* Animation Buttons */
+.anim-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+}
+
+.anim-btn {
+    padding: 10px 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #ccc;
+    font-size: 0.75em;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.anim-btn:hover {
+    background: rgba(74, 144, 217, 0.2);
+    border-color: rgba(74, 144, 217, 0.4);
+    color: #fff;
+    transform: translateY(-2px);
+}
+
+.anim-btn.active {
+    background: linear-gradient(135deg, #4a90d9 0%, #357abd 100%);
+    border-color: #4a90d9;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(74, 144, 217, 0.3);
+}
+
+.anim-btn:active {
+    transform: translateY(0);
+}
+
+/* Scrollbar for the panel */
+#ui-panel::-webkit-scrollbar {
+    width: 8px;
+}
+
+#ui-panel::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+}
+
+#ui-panel::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+}
+
+#ui-panel::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* ============================================
+   BOTTOM CONTROLS (Features 2 & 5)
+   ============================================ */
+#bottom-controls {
+    position: fixed;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    z-index: 100;
+    /* Hidden by default, shown on hover */
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+/* Show controls when hovering over the app */
+body:hover #bottom-controls {
+    opacity: 1;
+}
+
+/* Keep controls visible when text input is active */
+#bottom-controls:has(#text-input-container:not(.hidden)),
+#bottom-controls:focus-within {
+    opacity: 1;
+}
+
+/* Toggle Button */
+.toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, rgba(40, 40, 60, 0.9) 0%, rgba(30, 30, 50, 0.95) 100%);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 25px;
+    color: #ccc;
+    font-size: 0.85em;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.toggle-btn:hover {
+    background: linear-gradient(135deg, rgba(50, 50, 75, 0.95) 0%, rgba(40, 40, 60, 0.98) 100%);
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.toggle-btn.active {
+    background: linear-gradient(135deg, #4a90d9 0%, #357abd 100%);
+    color: #fff;
+    border-color: rgba(74, 144, 217, 0.5);
+}
+
+.toggle-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Text Input Container */
+#text-input-container {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 10px 14px;
+    background: linear-gradient(135deg, rgba(30, 30, 50, 0.95) 0%, rgba(20, 20, 35, 0.98) 100%);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 1;
+    transform: translateY(0);
+}
+
+#text-input-container.hidden {
+    opacity: 0;
+    transform: translateY(10px);
+    pointer-events: none;
+    height: 0;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+}
+
+#text-input {
+    width: 250px;
+    padding: 10px 16px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: #fff;
+    font-size: 0.9em;
+    font-family: 'Segoe UI', sans-serif;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+#text-input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+#text-input:focus {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(74, 144, 217, 0.5);
+    box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.1);
+}
+
+.comm-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.send-btn {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #4a90d9 0%, #357abd 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(74, 144, 217, 0.3);
+}
+
+.send-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(74, 144, 217, 0.4);
+}
+
+.send-btn:active {
+    transform: translateY(0);
+}
+
+/* PTT Hint */
+.ptt-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.7em;
+    color: #666;
+    padding: 4px 10px;
+}
+
+.key-hint {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.9em;
+    color: #888;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* ============================================
+   WAVEFORM VISUALIZATION (Feature 3)
+   ============================================ */
+#waveform-container {
+    position: fixed;
+    top: calc(50% + 10px); /* Below the face */
+    left: 50%;
+    transform: translate(-50%, 0);
+    width: 260px;
+    height: 70px;
+    background: linear-gradient(135deg, rgba(30, 30, 50, 0.9) 0%, rgba(20, 20, 35, 0.95) 100%);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    padding: 12px 15px;
+    box-shadow: 
+        0 8px 30px rgba(0, 0, 0, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.1),
+        0 0 40px rgba(99, 102, 241, 0.15);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#waveform-container.visible {
+    opacity: 1;
+    visibility: visible;
+    animation: waveform-appear 0.3s ease-out;
+}
+
+@keyframes waveform-appear {
+    from {
+        opacity: 0;
+        transform: translate(-50%, 0) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0) scale(1);
+    }
+}
+
+#waveform-canvas {
+    width: 100%;
+    height: 50px;
+    border-radius: 8px;
+}
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+@media (max-width: 400px) {
+    #bottom-controls {
+        width: 95%;
+    }
+    
+    #text-input {
+        width: 180px;
+    }
+    
+    .toggle-btn span {
+        display: none;
+    }
 }
