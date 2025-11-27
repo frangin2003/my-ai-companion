@@ -2,6 +2,7 @@ import sys
 from app.apps.registry import AppRegistry
 from app.apps.base import AppProvider
 from app.tts.base import TTSProvider
+from app.tts.gemini import GeminiTTS
 
 # Conditional imports based on OS
 if sys.platform == "win32":
@@ -35,4 +36,6 @@ def setup_registry() -> AppRegistry:
 
 def setup_tts() -> TTSProvider:
     """Initializes the TTS provider for the current OS."""
+    # Uncomment the following line to use Gemini TTS
+    # return GeminiTTS()
     return DefaultTTS()
