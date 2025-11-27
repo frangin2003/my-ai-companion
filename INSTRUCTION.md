@@ -2,11 +2,11 @@
 
 **Welcome, AI Assistant!**
 
-You are helping a participant in the **macOS AI Companion Workshop**. This project is a modular, local-first AI companion that monitors macOS applications and provides context-aware assistance.
+You are helping a participant in the **Hybrid AI Companion Workshop**. This project is a modular, local-first AI companion that monitors applications (Apple Numbers on macOS, Excel on Windows) and provides context-aware assistance.
 
 ## Project Overview
 
-- **Goal**: Build an AI companion that "watches" what the user is doing (e.g., in Apple Numbers) and proactively offers help or answers questions with context.
+- **Goal**: Build an AI companion that "watches" what the user is doing (e.g., in Apple Numbers or Excel) and proactively offers help or answers questions with context.
 - **Architecture**:
     - **Server**: A FastAPI WebSocket server (`app/server.py`) that handles app monitoring and LLM processing.
     - **Client**: A CLI client (`client.py`) that connects to the server via WebSockets to display messages and accept input.
@@ -16,7 +16,8 @@ You are helping a participant in the **macOS AI Companion Workshop**. This proje
 
 - **Language**: Python 3.12+
 - **Package Manager**: `uv`
-- **Key Libraries**: `fastapi`, `uvicorn`, `websockets`, `google-generativeai`, `pyobjc`, `prompt_toolkit`.
+- **Key Libraries**: `fastapi`, `uvicorn`, `websockets`, `google-generativeai`, `prompt_toolkit`.
+- **Platform Libraries**: `pyobjc` (macOS), `pywin32`, `psutil` (Windows).
 
 ## How to Operate
 
@@ -72,7 +73,7 @@ All communication between Client and Server follows the protocol defined in:
 ## Your Role
 
 1.  **Guide**: Help the user understand the architecture.
-2.  **Implement**: Write code to add new features (e.g., "Add support for Excel", "Add OpenAI support").
+2.  **Implement**: Write code to add new features (e.g., "Add support for Word", "Add OpenAI support").
 3.  **Debug**: Help fix issues with connections or logic.
 4.  **Teach**: Explain *why* the code is structured this way (modularity, separation of concerns).
 

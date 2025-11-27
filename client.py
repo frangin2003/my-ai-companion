@@ -4,7 +4,14 @@ import sys
 from websockets.client import connect
 from prompt_toolkit import PromptSession
 from prompt_toolkit.patch_stdout import patch_stdout
-from app.tts.macos import MacOSTTS
+# Conditional imports for TTS
+if sys.platform == "win32":
+    from app.tts.windows import WindowsTTS as TTSProvider
+elif sys.platform == "darwin":
+    from app.tts.macos import MacOSTTS as TTSProvider
+else:
+    class TTSProvider:
+        def speak(self, text): print(f"[TTS]: {text}")
 
 async def listen_for_messages(websocket, tts):
     """Listens for messages from the server."""
@@ -20,7 +27,7 @@ async def listen_for_messages(websocket, tts):
                 elif event_type == "suggestion":
                     msg = payload.get("message")
                     print(f"\n[Suggestion] {msg}")
-                    # Note: TTS is blocking in the current implementation (os.system).
+                    # Note: TTS behavior depends on OS implementation.
                     # In a real async app, we'd run this in an executor.
                     # For now, it might pause the UI briefly.
                     tts.speak(msg)
@@ -38,7 +45,7 @@ async def listen_for_messages(websocket, tts):
 async def main():
     print("=== AI Companion Client ===")
     uri = "ws://localhost:8000/ws"
-    tts = MacOSTTS()
+    tts = TTSProvider()
     session = PromptSession()
     
     try:

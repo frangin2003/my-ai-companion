@@ -1,11 +1,31 @@
 import asyncio
 import json
 import logging
+import sys
 from typing import List
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from app.llm.gemini import GeminiLLM
-from app.apps.numbers import NumbersApp
-from app.apps.numbers import NumbersApp
+# Conditional imports based on OS
+if sys.platform == "win32":
+    from app.apps.excel import ExcelApp
+    AppProviderClass = ExcelApp
+    TARGET_APP_NAME = "Excel"
+    PERSONA_NAME = "excel_guru"
+elif sys.platform == "darwin":
+    from app.apps.numbers import NumbersApp
+    AppProviderClass = NumbersApp
+    TARGET_APP_NAME = "Numbers"
+    PERSONA_NAME = "numbers_guru"
+else:
+    # Fallback or error for unsupported OS
+    from app.apps.base import AppProvider
+    class MockApp(AppProvider):
+        def get_active_app_name(self): return None
+        def is_target_app(self, name): return False
+        def get_context(self): return "Unsupported OS"
+    AppProviderClass = MockApp
+    TARGET_APP_NAME = "Unknown"
+    PERSONA_NAME = "default"
 from app.prompts.personas import get_persona
 from app.config import settings
 
@@ -42,7 +62,7 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 llm = GeminiLLM()
-app_monitor = NumbersApp()
+app_monitor = AppProviderClass()
 
 async def monitor_loop():
     """Background task to monitor active app and emit events."""
@@ -72,7 +92,7 @@ async def monitor_loop():
                             "data": {"context": f"User switched to {current_app}"}
                         })
                         
-                        persona = get_persona("numbers_guru")
+                        persona = get_persona(PERSONA_NAME)
                         prompt = persona["prompt_template"].format(
                             app_name=current_app,
                             context=context
@@ -129,9 +149,9 @@ async def websocket_endpoint(websocket: WebSocket):
                 # or at least pass the context to the default persona.
                 # Let's check if we have a valid document open.
                 if "No document open" not in context:
-                     persona = get_persona("numbers_guru")
+                     persona = get_persona(PERSONA_NAME)
                      prompt = persona["prompt_template"].format(
-                        app_name="Numbers", # We assume we are talking about Numbers
+                        app_name=TARGET_APP_NAME,
                         context=context
                     )
                      # Append user input to the prompt since the template might not have it
