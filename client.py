@@ -1,74 +1,98 @@
 import asyncio
-import json
 import sys
+import json
+import sounddevice as sd
+import numpy as np
+import scipy.io.wavfile as wav
+import io
 from websockets.client import connect
-from prompt_toolkit import PromptSession
-from prompt_toolkit.patch_stdout import patch_stdout
-from prompt_toolkit.patch_stdout import patch_stdout
+
+# Configuration
+URI = "ws://localhost:8000/ws"
+SAMPLE_RATE = 44100  # Hz
+CHANNELS = 1
 
 async def listen_for_messages(websocket):
-    """Listens for messages from the server."""
+    """Listens for incoming messages from the server."""
     try:
         async for message in websocket:
             data = json.loads(message)
-            event_type = data.get("type")
+            msg_type = data.get("type")
             payload = data.get("data", {})
             
-            with patch_stdout():
-                if event_type == "thinking_start":
-                    print(f"\n[AI] Thinking... ({payload.get('context', '')})")
-                elif event_type == "suggestion":
-                    msg = payload.get("message")
-                    print(f"\n[Suggestion] {msg}")
-                elif event_type == "reply":
-                    msg = payload.get("message")
-                    print(f"\n[AI] {msg}")
-                else:
-                    print(f"\n[Unknown Event] {data}")
+            if msg_type == "thinking_start":
+                print(f"\n[AI] Thinking... ({payload.get('context', '')})")
+            elif msg_type == "suggestion":
+                print(f"\n[AI Suggestion] {payload.get('message')}")
+            elif msg_type == "reply":
+                print(f"\n[AI] {payload.get('message')}")
+            elif msg_type == "error":
+                print(f"\n[Error] {payload.get('message')}")
     except Exception as e:
-        with patch_stdout():
-            print(f"\n[Client] Disconnected: {e}")
+        print(f"\n[Client] Disconnected: {e}")
         sys.exit(0)
+
+async def record_audio(duration=5):
+    """Records audio for a fixed duration."""
+    print(f"\n[Client] Recording for {duration} seconds...")
+    recording = sd.rec(int(duration * SAMPLE_RATE), samplerate=SAMPLE_RATE, channels=CHANNELS, dtype='int16')
+    sd.wait()  # Wait until recording is finished
+    print("[Client] Recording finished.")
+    
+    # Convert to WAV bytes
+    wav_io = io.BytesIO()
+    wav.write(wav_io, SAMPLE_RATE, recording)
+    return wav_io.getvalue()
 
 async def main():
     print("=== AI Companion Client ===")
-    uri = "ws://localhost:8000/ws"
-    session = PromptSession()
+    print("Commands:")
+    print("  /record [seconds] - Record audio and send (default 5s)")
+    print("  /quit             - Exit")
+    print("  [message]         - Send text message")
     
     try:
-        async with connect(uri) as websocket:
-            with patch_stdout():
-                print(f"[Client] Connected to {uri}")
-                print("Type your message and press Enter. Type 'quit' to exit.")
-
-            # Start listener task
-            listener_task = asyncio.create_task(listen_for_messages(websocket))
+        async with connect(URI) as websocket:
+            print(f"[Client] Connected to {URI}")
+            
+            # Start listening task
+            listen_task = asyncio.create_task(listen_for_messages(websocket))
+            
+            loop = asyncio.get_running_loop()
             
             while True:
-                try:
-                    user_input = await session.prompt_async("You: ")
-                    
-                    if user_input.lower() in ('quit', 'exit'):
-                        break
-                    
-                    if user_input.strip():
-                        message = {
-                            "type": "message",
-                            "data": {"content": user_input}
-                        }
-                        await websocket.send(json.dumps(message))
-                        
-                except (KeyboardInterrupt, EOFError):
+                # Use a separate thread for input to not block the event loop
+                user_input = await loop.run_in_executor(None, input, "")
+                
+                if user_input.strip().lower() == "/quit":
                     break
+                
+                elif user_input.strip().lower().startswith("/record"):
+                    parts = user_input.strip().split()
+                    duration = 5
+                    if len(parts) > 1 and parts[1].isdigit():
+                        duration = int(parts[1])
+                    
+                    audio_bytes = await record_audio(duration)
+                    await websocket.send(audio_bytes)
+                    print("[Client] Audio sent.")
+                    
+                elif user_input.strip():
+                    message = {
+                        "type": "message",
+                        "data": {
+                            "content": user_input
+                        }
+                    }
+                    await websocket.send(json.dumps(message))
             
-            listener_task.cancel()
+            listen_task.cancel()
             
     except Exception as e:
-        print(f"[Fatal Error] Could not connect to server: {e}")
-        print("Ensure the server is running: 'uv run main.py'")
+        print(f"[Client] Connection error: {e}")
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        pass
+        print("\n[Client] Exiting...")

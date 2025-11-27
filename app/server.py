@@ -132,13 +132,36 @@ async def startup_event():
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
-    try:
-        while True:
-            data = await websocket.receive_json()
-            if data.get("type") == "message":
-                user_message = data["data"]["content"]
-                logger.info(f"Received user message: {user_message}")
+    # try:  <-- Removed outer try
+    while True:
+        try:
+            # Receive message (can be text or bytes)
+            message = await websocket.receive()
+            
+            user_message = ""
+            
+            if "text" in message:
+                data = json.loads(message["text"])
+                if data.get("type") == "message":
+                    user_message = data["data"]["content"]
+                    logger.info(f"Received user message: {user_message}")
+            
+            elif "bytes" in message:
+                audio_bytes = message["bytes"]
+                logger.info(f"Received audio bytes: {len(audio_bytes)} bytes")
                 
+                await manager.broadcast({
+                    "type": "thinking_start",
+                    "data": {"context": "Transcribing audio..."}
+                })
+                
+                user_message = llm.transcribe(audio_bytes)
+                logger.info(f"Transcribed text: {user_message}")
+                
+                if not user_message:
+                    continue
+
+            if user_message:
                 # Get current context from the active app
                 current_app = system_monitor.get_active_app_name()
                 
@@ -185,9 +208,10 @@ async def websocket_endpoint(websocket: WebSocket):
                 
                 # Speak the reply on the server
                 tts.speak(response)
-                
-    except WebSocketDisconnect:
-        manager.disconnect(websocket)
-    except Exception as e:
-        logger.error(f"WebSocket error: {e}")
-        manager.disconnect(websocket)
+            
+        except WebSocketDisconnect:
+            manager.disconnect(websocket)
+            break
+        except Exception as e:
+            logger.error(f"WebSocket error: {e}")
+            continue
