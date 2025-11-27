@@ -24,6 +24,7 @@ else:
     AppProviderClass = MockApp
     TARGET_APP_NAME = "Unknown"
 from app.apps.monitor import SystemMonitor
+from app.apps.registry import AppRegistry
 from app.prompts.personas import PERSONA
 from app.prompts.app_instructions import get_app_instruction
 from app.config import settings
@@ -65,7 +66,8 @@ class ConnectionManager:
 manager = ConnectionManager()
 llm = GeminiLLM()
 system_monitor = SystemMonitor()
-specialized_app = AppProviderClass()
+registry = AppRegistry()
+registry.register(AppProviderClass())
 
 async def monitor_loop():
     """Background task to monitor active app and emit events."""
@@ -91,12 +93,13 @@ async def monitor_loop():
             if current_app != previous_app:
                 logger.info(f"App switch detected: {previous_app} -> {current_app}")
                 
-                if specialized_app.is_target_app(current_app):
+                provider = registry.get_provider(current_app)
+                if provider:
                     current_time = asyncio.get_event_loop().time()
                     if current_time - last_suggestion_time >= suggestion_cooldown:
                         logger.info(f"Target app {current_app} active. Cooldown satisfied.")
                         
-                        context = specialized_app.get_context()
+                        context = provider.get_context()
                         logger.info(f"Retrieved context: {context}")
                         
                         await manager.broadcast({
@@ -156,8 +159,9 @@ async def websocket_endpoint(websocket: WebSocket):
                     logger.info(f"Ignored app {current_app} active. Using last valid app: {last_valid_app}")
                     current_app = last_valid_app
                 
-                if specialized_app.is_target_app(current_app):
-                    context = specialized_app.get_context()
+                provider = registry.get_provider(current_app)
+                if provider:
+                    context = provider.get_context()
                 else:
                     window_title = system_monitor.get_active_window_title(current_app)
                     context = f"Active Application: {current_app}, Window Title: {window_title}"

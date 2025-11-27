@@ -2,14 +2,18 @@
 
 **Welcome, AI Assistant!**
 
-You are helping a participant in the **Hybrid AI Companion Workshop**. This project is a modular, local-first AI companion that monitors applications (Apple Numbers on macOS, Excel on Windows) and provides context-aware assistance.
+You are helping a participant in the **Hybrid AI Companion Workshop**. This project is a modular, local-first AI companion that runs on both **macOS** and **Windows**. It monitors applications (like Excel, Numbers, Chrome) and provides context-aware assistance.
 
 ## Project Overview
 
-- **Goal**: Build an AI companion that "watches" what the user is doing (e.g., in Apple Numbers or Excel) and proactively offers help or answers questions with context.
+- **Goal**: Build an AI companion that "watches" what the user is doing and proactively offers help.
 - **Architecture**:
-    - **Server**: A FastAPI WebSocket server (`app/server.py`) that handles app monitoring and LLM processing.
-    - **Client**: A CLI client (`client.py`) that connects to the server via WebSockets to display messages and accept input.
+    - **Server**: A FastAPI WebSocket server (`app/server.py`) that orchestrates monitoring and LLM processing.
+    - **Monitoring**:
+        - **System Monitor** (`app/apps/monitor.py`): Detects the active app and window title on any OS.
+        - **App Registry** (`app/apps/registry.py`): Manages specialized app integrations.
+        - **App Providers** (`app/apps/excel.py`, `numbers.py`): Deep integration for specific apps.
+    - **Client**: A CLI client (`client.py`) that connects to the server and handles Text-to-Speech (TTS).
     - **Communication**: Event-driven JSON messages (see `SERVER_SPEC.md`).
 
 ## Technology Stack
@@ -17,7 +21,9 @@ You are helping a participant in the **Hybrid AI Companion Workshop**. This proj
 - **Language**: Python 3.12+
 - **Package Manager**: `uv`
 - **Key Libraries**: `fastapi`, `uvicorn`, `websockets`, `google-generativeai`, `prompt_toolkit`.
-- **Platform Libraries**: `pyobjc` (macOS), `pywin32`, `psutil` (Windows).
+- **Platform Libraries**:
+    - **macOS**: `pyobjc` (AppKit), AppleScript.
+    - **Windows**: `pywin32`, `psutil`.
 
 ## How to Operate
 
@@ -53,7 +59,7 @@ The project is structured into modular components within the `app/` directory. *
     - Path: `app/tts/`
     - Instructions: `app/tts/AI_INSTRUCTIONS.md`
 
-- **App Integration** (Monitoring Numbers, etc.):
+- **App Integration** (Monitoring, Registry, Providers):
     - Path: `app/apps/`
     - Instructions: `app/apps/AI_INSTRUCTIONS.md`
 

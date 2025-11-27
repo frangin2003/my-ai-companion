@@ -3,10 +3,13 @@
 This module manages personas and prompt templates.
 
 ## How to Extend
-To add a new persona:
+To customize the AI's personality:
 1.  Open `personas.py`.
-2.  Add a new entry to the `PERSONAS` dictionary with a unique key.
-3.  Define the `system_instruction` and `prompt_template`.
+2.  Edit the `PERSONA` dictionary (system instruction).
+
+To add instructions for a new app:
+1.  Open `app_instructions.py`.
+2.  Add a new entry to `APP_INSTRUCTIONS` for the app name.
 
 ## Prompt for AI Assistant
-"I want to add a new persona for [Role/App]. Please add a new entry to `PERSONAS` in `personas.py` with a system instruction that defines this persona and a prompt template that includes relevant context placeholders."
+"I want to change the AI's personality to be more [Trait]. Please edit `personas.py`. Also, I want to add specific instructions for [App Name] in `app_instructions.py`."
