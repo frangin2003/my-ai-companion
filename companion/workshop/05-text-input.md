@@ -197,9 +197,11 @@ function toggleTextInput() {
 function sendTextMessage(text) {
     if (!text || !text.trim()) return;
     
-    sendWebSocketMessage('text', {
-        text: text.trim(),
-        timestamp: Date.now()
+    // Format per SERVER_SPEC.md: type="message", data.content
+    sendWebSocketMessage('message', {
+        data: {
+            content: text.trim()
+        }
     });
     
     console.log('📝 Text sent:', text);
@@ -274,15 +276,16 @@ initTextInput();
 5. Check the console - you should see the message being sent
 6. Press **T** again to hide the text input
 
-### Backend Message Format
+### Backend Message Format (per SERVER_SPEC.md)
 
 Your WebSocket server will receive:
 
 ```json
 {
-    "type": "text",
-    "text": "Hello, companion!",
-    "timestamp": 1699123456789
+    "type": "message",
+    "data": {
+        "content": "Hello, companion!"
+    }
 }
 ```
 
@@ -304,7 +307,7 @@ Your WebSocket server will receive:
 │  sendTextMessage(text)                          │
 │       │                                         │
 │       ▼                                         │
-│  sendWebSocketMessage('text', { text })        │
+│  sendWebSocketMessage('message', { data })     │
 │       │                                         │
 │       ▼                                         │
 │  WebSocket.send(JSON.stringify(...))           │
@@ -328,7 +331,7 @@ function sendTextMessage(text) {
     input.disabled = true;
     input.placeholder = 'Sending...';
     
-    sendWebSocketMessage('text', { text: text.trim(), timestamp: Date.now() });
+    sendWebSocketMessage('message', { data: { content: text.trim() } });
     
     // Re-enable after a short delay
     setTimeout(() => {

@@ -49,8 +49,8 @@ export const faceExpressions = {
 // State
 let faceTexture = null;
 let faceMesh = null;
-let currentExpression = 'neutral';
-let preBlinkExpression = 'neutral';
+let currentExpression = 'neutral2';
+let preBlinkExpression = 'neutral2';
 
 // Blink state
 let blinkTimer = 0;
@@ -63,7 +63,13 @@ let isTalking = false;
 let talkTimer = 0;
 const TALK_SPEED = 120;
 let savedExpression = 'neutral';
-const talkFrames = ['talking1', 'talking2', 'talking3', 'neutral2'];
+// Talk frames as grid coordinates: [col, row]
+const talkFrames = [
+    { col: 0, row: 0 },  // neutral
+    { col: 0, row: 1 },  // neutral2
+    { col: 1, row: 0 },  // happy
+    { col: 1, row: 1 }   // closed
+];
 let talkFrameIndex = 0;
 
 // Face material
@@ -102,7 +108,7 @@ export function loadFaceTexture(texturePath) {
                 faceMesh.material.needsUpdate = true;
             }
             
-            setExpression('neutral');
+            setExpression('neutral2');
             console.log('Available expressions:', Object.keys(faceExpressions).join(', '));
         },
         null,
@@ -160,7 +166,7 @@ export function updateBlink(deltaTime) {
         isBlinking = true;
         blinkTimer = 0;
         preBlinkExpression = currentExpression;
-        setExpression('closed');
+        setExpression('sleepy');
     } else if (isBlinking && blinkTimer > BLINK_DURATION) {
         isBlinking = false;
         blinkTimer = 0;
@@ -176,7 +182,8 @@ export function updateTalking(deltaTime) {
     if (talkTimer > TALK_SPEED) {
         talkTimer = 0;
         talkFrameIndex = (talkFrameIndex + 1) % talkFrames.length;
-        setExpression(talkFrames[talkFrameIndex]);
+        const frame = talkFrames[talkFrameIndex];
+        setExpressionByGrid(frame.col, frame.row);
     }
 }
 

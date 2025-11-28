@@ -3,7 +3,7 @@
 // Handles connection to backend with auto-reconnect
 // ============================================
 
-const WS_URL = 'ws://localhost:8080';
+const WS_URL = 'ws://localhost:8000/ws';
 let websocket = null;
 let wsReconnectTimer = null;
 const WS_RECONNECT_DELAY = 3000;

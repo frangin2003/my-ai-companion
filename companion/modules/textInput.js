@@ -10,9 +10,11 @@ let textInputVisible = false;
 export function sendTextMessage(text) {
     if (!text || !text.trim()) return;
     
-    sendMessage('text', {
-        text: text.trim(),
-        timestamp: Date.now()
+    // Format per SERVER_SPEC.md: type="message", data.content
+    sendMessage('message', {
+        data: {
+            content: text.trim()
+        }
     });
     
     console.log('📝 Text sent:', text);

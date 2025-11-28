@@ -1,6 +1,18 @@
 const { app, BrowserWindow, globalShortcut, ipcMain } = require('electron');
 const path = require('path');
 
+// Enable live reload for development
+try {
+    require('electron-reload')(__dirname, {
+        electron: path.join(__dirname, 'node_modules', '.bin', 'electron'),
+        hardResetMethod: 'exit',
+        forceHardReset: false
+    });
+    console.log('🔄 Live reload enabled');
+} catch (e) {
+    console.log('Live reload not available (install with: npm install electron-reload --save-dev)');
+}
+
 let mainWindow;
 
 function createWindow() {

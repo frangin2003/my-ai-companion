@@ -3,6 +3,11 @@
 ## Overview
 Make the avatar respond to state messages from the backend, automatically playing the appropriate animation and expression based on the AI's current state.
 
+The companion server uses the events defined in **SERVER_SPEC.md**:
+- `thinking_start` - AI begins processing
+- `suggestion` - AI generates a proactive tip
+- `reply` - AI responds to user message
+
 ## What You'll Learn
 - Parsing and handling structured JSON messages
 - Mapping backend states to avatar animations
@@ -110,7 +115,7 @@ function handleStateMessage(message) {
 
 ## Step 3: Update the WebSocket Message Handler
 
-Update your `handleWebSocketMessage` function to handle all message types:
+Update your `handleWebSocketMessage` function to handle the **SERVER_SPEC.md** events:
 
 ```javascript
 function handleWebSocketMessage(data) {
@@ -119,28 +124,34 @@ function handleWebSocketMessage(data) {
         console.log('📨 Received:', message);
         
         switch (message.type) {
+            // === SERVER_SPEC.md Events ===
+            case 'thinking_start':
+                handleThinkingStart(message);
+                break;
+            case 'suggestion':
+                handleSuggestion(message);
+                break;
+            case 'reply':
+                handleReply(message);
+                break;
+            
+            // === Legacy/Additional Events ===
             case 'state':
                 handleStateMessage(message);
                 break;
-                
             case 'audio':
                 handleAudioMessage(message);
                 break;
-                
             case 'expression':
-                // Direct expression change
                 if (message.expression && faceExpressions[message.expression]) {
                     setExpression(message.expression);
                 }
                 break;
-                
             case 'animation':
-                // Direct animation change
                 if (message.animation) {
                     playAnimation(message.animation);
                 }
                 break;
-                
             default:
                 console.log('Unknown message type:', message.type);
         }
@@ -152,47 +163,102 @@ function handleWebSocketMessage(data) {
 
 ---
 
-## Backend Message Formats
+## Step 4: Add SERVER_SPEC.md Event Handlers
+
+```javascript
+// ============================================
+// SERVER_SPEC.md Event Handlers
+// ============================================
+
+function handleThinkingStart(message) {
+    // AI is processing - show thinking animation
+    console.log('🤔 AI thinking...', message.data?.context || '');
+    setExpression('thinking');
+    playAnimation('idle');
+}
+
+function handleSuggestion(message) {
+    // AI generated a proactive suggestion
+    const { app_name, message: suggestionText } = message.data || {};
+    console.log(`💡 Suggestion for ${app_name}:`, suggestionText);
+    
+    // Show excited/helpful expression
+    setExpression('happy');
+    playAnimation('idle');
+    startTalking();
+    
+    // Stop talking after a delay based on message length
+    const duration = Math.max(2000, (suggestionText?.length || 0) * 50);
+    setTimeout(() => {
+        stopTalking();
+        setExpression('neutral');
+    }, duration);
+}
+
+function handleReply(message) {
+    // AI response to user message
+    const replyText = message.data?.message || '';
+    console.log('💬 AI Reply:', replyText);
+    
+    // Show speaking animation
+    setExpression('happy');
+    startTalking();
+    
+    // Stop talking after a delay based on message length
+    const duration = Math.max(2000, replyText.length * 50);
+    setTimeout(() => {
+        stopTalking();
+        setExpression('neutral');
+    }, duration);
+}
+```
+
+---
+
+## Backend Message Formats (SERVER_SPEC.md)
+
+### `thinking_start` - AI begins processing
+```json
+{
+    "type": "thinking_start",
+    "data": {
+        "context": "Optional context string"
+    }
+}
+```
+
+### `suggestion` - Proactive AI tip
+```json
+{
+    "type": "suggestion",
+    "data": {
+        "app_name": "Numbers",
+        "message": "Try using Command+Option+N to create a new sheet."
+    }
+}
+```
+
+### `reply` - AI response to user
+```json
+{
+    "type": "reply",
+    "data": {
+        "message": "To sum a column, use the SUM function."
+    }
+}
+```
+
+---
+
+## Legacy/Additional Message Formats
 
 ### State Message
-The most common message - sets the overall avatar state:
+Sets the overall avatar state:
 
 ```json
 {
     "type": "state",
     "state": "thinking"
-}
-```
-
-### State with Overrides
-Override the default animation or expression:
-
-```json
-{
-    "type": "state",
-    "state": "happy",
-    "animation": "dance",
-    "expression": "love"
-}
-```
-
-### Direct Expression Change
-Change only the facial expression:
-
-```json
-{
-    "type": "expression",
-    "expression": "surprised"
-}
-```
-
-### Direct Animation Change
-Change only the body animation:
-
-```json
-{
-    "type": "animation",
-    "animation": "wave"
 }
 ```
 
@@ -209,30 +275,33 @@ Send audio along with a state change:
 
 ---
 
-## State Flow Diagram
+## State Flow Diagram (SERVER_SPEC.md)
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │                    Typical AI Response Flow                   │
 ├──────────────────────────────────────────────────────────────┤
 │                                                               │
-│  1. User sends voice/text                                     │
-│         │                                                     │
+│  1. User sends message                                        │
+│         │  { type: "message", data: { content: "..." } }     │
 │         ▼                                                     │
-│  2. Backend sends: { type: "state", state: "listening" }     │
-│         │         Avatar: 😊 idle + happy                     │
-│         ▼                                                     │
-│  3. Backend sends: { type: "state", state: "thinking" }      │
+│  2. Backend sends: { type: "thinking_start" }                │
 │         │         Avatar: 🤔 idle + thinking                  │
 │         ▼                                                     │
-│  4. Backend sends: { type: "state", state: "speaking" }      │
-│         │         Avatar: 🗣️ idle + talking animation         │
+│  3. Backend sends: { type: "reply", data: { message } }      │
+│                   Avatar: 🗣️ talking + happy                  │
+│                   (auto-stops after message duration)         │
+│                                                               │
+├──────────────────────────────────────────────────────────────┤
+│                    Proactive Suggestion Flow                  │
+├──────────────────────────────────────────────────────────────┤
+│                                                               │
+│  1. AI detects context from monitored app                     │
 │         │                                                     │
-│  5. Backend sends: { type: "audio", audio_base64: "..." }    │
-│         │         Avatar: plays audio                         │
 │         ▼                                                     │
-│  6. Backend sends: { type: "state", state: "idle" }          │
-│                   Avatar: 😐 idle + neutral                   │
+│  2. Backend sends: { type: "suggestion", data: {...} }       │
+│                   Avatar: 💡 talking + happy                  │
+│                   (auto-stops after message duration)         │
 │                                                               │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -241,52 +310,72 @@ Send audio along with a state change:
 
 ## Testing
 
-### Test Server Example
+### Test Server Example (per SERVER_SPEC.md)
 
 ```javascript
 const WebSocket = require('ws');
-const wss = new WebSocket.Server({ port: 8080 });
+const wss = new WebSocket.Server({ port: 8000 });
 
 wss.on('connection', (ws) => {
     console.log('Client connected!');
     
-    // Simulate AI response flow
+    // Simulate AI response flow per SERVER_SPEC.md
     ws.on('message', async (msg) => {
         const data = JSON.parse(msg);
         
-        if (data.type === 'text' || data.type === 'audio') {
-            // Step 1: Listening
-            ws.send(JSON.stringify({ type: 'state', state: 'listening' }));
-            await sleep(500);
-            
-            // Step 2: Thinking
-            ws.send(JSON.stringify({ type: 'state', state: 'thinking' }));
+        if (data.type === 'message') {
+            // Step 1: Thinking
+            ws.send(JSON.stringify({ 
+                type: 'thinking_start',
+                data: { context: 'Processing user message...' }
+            }));
             await sleep(2000);
             
-            // Step 3: Excited response!
-            ws.send(JSON.stringify({ type: 'state', state: 'excited' }));
-            await sleep(1500);
-            
-            // Step 4: Back to idle
-            ws.send(JSON.stringify({ type: 'state', state: 'idle' }));
+            // Step 2: Reply
+            ws.send(JSON.stringify({ 
+                type: 'reply',
+                data: { message: 'Here is my response to your question!' }
+            }));
         }
     });
+    
+    // Simulate a proactive suggestion after 5 seconds
+    setTimeout(() => {
+        ws.send(JSON.stringify({
+            type: 'suggestion',
+            data: {
+                app_name: 'Demo App',
+                message: 'Try clicking the button in the top right!'
+            }
+        }));
+    }, 5000);
 });
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-console.log('Test server running on ws://localhost:8080');
+console.log('Test server running on ws://localhost:8000/ws');
 ```
 
 ### Browser Console Test
 
 ```javascript
-// Simulate receiving state messages
-handleWebSocketMessage(JSON.stringify({ type: 'state', state: 'happy' }));
-handleWebSocketMessage(JSON.stringify({ type: 'state', state: 'thinking' }));
-handleWebSocketMessage(JSON.stringify({ type: 'state', state: 'excited' }));
+// Simulate receiving SERVER_SPEC.md events
+handleWebSocketMessage(JSON.stringify({ 
+    type: 'thinking_start', 
+    data: { context: 'test' } 
+}));
+
+handleWebSocketMessage(JSON.stringify({ 
+    type: 'reply', 
+    data: { message: 'Hello from the AI!' } 
+}));
+
+handleWebSocketMessage(JSON.stringify({ 
+    type: 'suggestion', 
+    data: { app_name: 'Test', message: 'Try this tip!' } 
+}));
 ```
 
 ---
@@ -346,14 +435,28 @@ function handleStateMessage(message) {
 
 ---
 
-## Complete Message Reference
+## Complete Message Reference (SERVER_SPEC.md)
+
+### Server → Client Events
+
+| Message Type | Data Fields | Avatar Response |
+|--------------|-------------|-----------------|
+| `thinking_start` | `context` (optional) | 🤔 thinking expression |
+| `suggestion` | `app_name`, `message` | 💡 talking + happy |
+| `reply` | `message` | 🗣️ talking + happy |
+
+### Client → Server Events
+
+| Message Type | Data Fields | Description |
+|--------------|-------------|-------------|
+| `message` | `content` | User text input |
+
+### Legacy Events (still supported)
 
 | Message Type | Required Fields | Optional Fields |
 |--------------|-----------------|-----------------|
 | `state` | `type`, `state` | `animation`, `expression` |
 | `audio` | `type`, `audio_base64` | `format`, `state` |
-| `expression` | `type`, `expression` | - |
-| `animation` | `type`, `animation` | - |
 
 ---
 

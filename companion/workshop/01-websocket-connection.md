@@ -50,7 +50,7 @@ Add this JavaScript code at the **top** of your `main.js` file (after the import
 // ============================================
 // WEBSOCKET CONNECTION
 // ============================================
-const WS_URL = 'ws://localhost:8080';
+const WS_URL = 'ws://localhost:8000/ws';
 let websocket = null;
 let wsReconnectTimer = null;
 const WS_RECONNECT_DELAY = 3000; // 3 seconds
@@ -197,7 +197,7 @@ function createStarPoint(scaleY) {
 
 1. Start your Electron app with `npm start`
 2. The **star on the avatar's head** should be **RED** (disconnected)
-3. Start a WebSocket server on `ws://localhost:8080`
+3. Start a WebSocket server on `ws://localhost:8000/ws`
 4. The star should turn **BLUE** (connected)
 5. Stop the server - star turns **ORANGE** briefly, then **RED**
 
@@ -207,7 +207,7 @@ Create a file `test-server.js`:
 
 ```javascript
 const WebSocket = require('ws');
-const wss = new WebSocket.Server({ port: 8080 });
+const wss = new WebSocket.Server({ port: 8000 });
 
 wss.on('connection', (ws) => {
     console.log('Client connected!');
@@ -215,7 +215,7 @@ wss.on('connection', (ws) => {
     ws.on('close', () => console.log('Client disconnected'));
 });
 
-console.log('WebSocket server running on ws://localhost:8080');
+console.log('WebSocket server running on ws://localhost:8000/ws');
 ```
 
 Run it with: `node test-server.js`
