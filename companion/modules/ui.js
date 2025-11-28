@@ -68,6 +68,11 @@ function updateDebug() {
     if (debugPanel) debugPanel.visible = visible;
 }
 
+export function isDebugMode() {
+    const debugToggle = document.getElementById('debug-toggle');
+    return debugToggle ? debugToggle.checked : false;
+}
+
 // UI Panel Toggle
 const COMPACT_WIDTH = 350;
 const COMPACT_HEIGHT = 450;

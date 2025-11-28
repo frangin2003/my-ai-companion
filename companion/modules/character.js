@@ -103,7 +103,7 @@ function createCurvedHorn(isLeft) {
     return hornGroup;
 }
 
-function createArm(isLeft) {
+function createArm() {
     const armGroup = new THREE.Group();
     
     const armLength = 0.45;
@@ -228,13 +228,13 @@ export function buildCharacter() {
     head.add(ornamentGroup);
     
     // Arms
-    const leftArmData = createArm(true);
+    const leftArmData = createArm();
     leftArmJoint = createJoint(bodyGroup, bodyWidth * 0.55, bodyHeight * 0.4, 0);
     leftArmData.group.rotation.z = -Math.PI / 2 - 0.3;
     leftArmData.group.position.x = leftArmData.length / 2;
     leftArmJoint.add(leftArmData.group);
     
-    const rightArmData = createArm(false);
+    const rightArmData = createArm();
     rightArmJoint = createJoint(bodyGroup, -bodyWidth * 0.55, bodyHeight * 0.4, 0);
     rightArmData.group.rotation.z = Math.PI / 2 + 0.3;
     rightArmData.group.position.x = -(rightArmData.length / 2);

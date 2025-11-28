@@ -4,6 +4,7 @@
 // ============================================
 
 import { sendMessage } from './websocket.js';
+import { isDebugMode } from './ui.js';
 
 let audioContext = null;
 let audioQueue = [];
@@ -117,9 +118,31 @@ export async function startRecording() {
         analyserNode.fftSize = 256;
         analyserSource.connect(analyserNode);
         
-        mediaRecorder = new MediaRecorder(recordingStream, {
-            mimeType: 'audio/webm;codecs=opus'
-        });
+        // Check for WebM support
+        const webmMimeTypes = [
+            'audio/webm;codecs=opus',
+            'audio/webm',
+            'audio/webm;codecs=pcm'
+        ];
+        
+        let selectedMimeType = null;
+        for (const mimeType of webmMimeTypes) {
+            if (MediaRecorder.isTypeSupported(mimeType)) {
+                selectedMimeType = mimeType;
+                break;
+            }
+        }
+        
+        if (!selectedMimeType) {
+            console.warn('⚠️ WebM not supported, falling back to default format');
+            // Still try to use MediaRecorder with default format
+            mediaRecorder = new MediaRecorder(recordingStream);
+        } else {
+            console.log('✅ Using WebM format:', selectedMimeType);
+            mediaRecorder = new MediaRecorder(recordingStream, {
+                mimeType: selectedMimeType
+            });
+        }
         
         audioChunks = [];
         
@@ -130,8 +153,21 @@ export async function startRecording() {
         };
         
         mediaRecorder.onstop = async () => {
-            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-            await sendAudioToBackend(audioBlob);
+            // Ensure we use WebM type for the blob
+            const actualMimeType = mediaRecorder.mimeType || 'audio/webm';
+            const audioBlob = new Blob(audioChunks, { type: actualMimeType });
+            
+            // Verify it's WebM
+            if (!actualMimeType.includes('webm')) {
+                console.warn('⚠️ Warning: Recording format is not WebM:', actualMimeType);
+            }
+            
+            await sendAudioToBackend(audioBlob, actualMimeType);
+            
+            // Play back recorded audio in debug mode
+            if (isDebugMode()) {
+                playRecordedAudio(audioBlob);
+            }
             
             if (recordingStream) {
                 recordingStream.getTracks().forEach(track => track.stop());
@@ -160,19 +196,45 @@ export function stopRecording() {
     }
 }
 
-async function sendAudioToBackend(audioBlob) {
+async function sendAudioToBackend(audioBlob, mimeType = 'audio/webm') {
     try {
         const base64Audio = await blobToBase64(audioBlob);
         
+        // Extract format from mimeType (e.g., 'audio/webm' -> 'webm')
+        const format = mimeType.includes('webm') ? 'webm' : mimeType.split('/')[1] || 'webm';
+        
         sendMessage('audio', {
             audio_base64: base64Audio,
-            format: 'webm',
+            format: format,
+            mime_type: mimeType,
             timestamp: Date.now()
         });
         
-        console.log('📤 Audio sent to backend');
+        console.log(`📤 Audio sent to backend (${format}, ${(audioBlob.size / 1024).toFixed(2)} KB)`);
     } catch (error) {
         console.error('Failed to send audio:', error);
+    }
+}
+
+function playRecordedAudio(audioBlob) {
+    try {
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        
+        audio.onended = () => {
+            URL.revokeObjectURL(audioUrl);
+            console.log('🔊 Debug playback finished');
+        };
+        
+        audio.onerror = (error) => {
+            console.error('Failed to play recorded audio:', error);
+            URL.revokeObjectURL(audioUrl);
+        };
+        
+        audio.play();
+        console.log('🔊 Playing recorded audio (debug mode)');
+    } catch (error) {
+        console.error('Failed to play recorded audio:', error);
     }
 }
 

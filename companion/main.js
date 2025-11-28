@@ -105,7 +105,7 @@ window.addEventListener('keydown', (e) => {
         toggleTextInput();
     }
 });
-
+    
 // Push-to-Talk with RIGHT SHIFT (works anytime)
 window.addEventListener('keydown', (e) => {
     if (e.code === 'ShiftRight') {
@@ -152,7 +152,7 @@ function animate() {
     
     // Update cape physics
     updateCapePhysics(deltaTime);
-    
+
     // Render the scene
     render();
 }
