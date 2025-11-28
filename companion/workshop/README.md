@@ -9,18 +9,42 @@ Before starting, make sure you have:
 - The base companion avatar running (`npm start` in the companion folder)
 - Basic knowledge of JavaScript
 
+## Modular Architecture
+
+The codebase uses a **modular architecture** for easy understanding and customization:
+
+```
+companion/
+├── main.js              # Entry point
+└── modules/
+    ├── websocket.js     # WebSocket connection
+    ├── audio.js         # Recording & playback
+    ├── waveform.js      # Waveform visualization
+    ├── textInput.js     # Text input handling
+    ├── scene.js         # Three.js setup
+    ├── character.js     # 3D avatar model
+    ├── face.js          # Expressions
+    ├── cape.js          # Cloth physics
+    ├── animations.js    # Body animations
+    ├── stateHandler.js  # Backend state handling
+    └── ui.js            # UI controls
+```
+
+📖 **[Read the full Architecture Guide](./00-architecture.md)** for details on each module.
+
 ## Workshop Structure
 
 Complete these features in order:
 
-| # | Feature | Time | Description |
-|---|---------|------|-------------|
-| 1 | [WebSocket Connection](./01-websocket-connection.md) | 15 min | Connect to a backend server with auto-reconnect |
-| 2 | [Push to Talk](./02-push-to-talk.md) | 20 min | Record voice and send to backend |
-| 3 | [Waveform Animation](./03-waveform-animation.md) | 15 min | Visual feedback while recording |
-| 4 | [Audio Playback](./04-audio-playback.md) | 15 min | Play TTS responses from backend |
-| 5 | [Text Input](./05-text-input.md) | 15 min | Send text messages to backend |
-| 6 | [Backend State](./06-backend-state.md) | 15 min | React to AI state changes |
+| # | Feature | Time | Module |
+|---|---------|------|--------|
+| 0 | [Architecture Overview](./00-architecture.md) | 10 min | Understanding the codebase |
+| 1 | [WebSocket Connection](./01-websocket-connection.md) | 15 min | `websocket.js` |
+| 2 | [Push to Talk](./02-push-to-talk.md) | 20 min | `audio.js` |
+| 3 | [Waveform Animation](./03-waveform-animation.md) | 15 min | `waveform.js` |
+| 4 | [Audio Playback](./04-audio-playback.md) | 15 min | `audio.js` |
+| 5 | [Text Input](./05-text-input.md) | 15 min | `textInput.js` |
+| 6 | [Backend State](./06-backend-state.md) | 15 min | `stateHandler.js` |
 
 **Total Time:** ~1.5 hours
 
