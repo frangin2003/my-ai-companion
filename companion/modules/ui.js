@@ -7,6 +7,7 @@ import { setExpression, startTalking, stopTalking } from './face.js';
 import { playAnimation } from './animations.js';
 import { joints } from './character.js';
 import { scene, camera, renderer } from './scene.js';
+import { testThinkingStart, testSuggestion, testReply, testState, availableStates } from './stateHandler.js';
 
 let axisHelper = null;
 let debugPanel = null;
@@ -47,6 +48,29 @@ export function initUIControls() {
         btn.addEventListener('click', () => {
             const animName = btn.getAttribute('data-anim');
             playAnimation(animName);
+        });
+    });
+    
+    // State test buttons
+    document.querySelectorAll('.state-test-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const testType = btn.getAttribute('data-test');
+            switch(testType) {
+                case 'thinking_start':
+                    testThinkingStart();
+                    break;
+                case 'suggestion':
+                    testSuggestion();
+                    break;
+                case 'reply':
+                    testReply();
+                    break;
+                default:
+                    // Test a state
+                    if (availableStates.includes(testType)) {
+                        testState(testType);
+                    }
+            }
         });
     });
     

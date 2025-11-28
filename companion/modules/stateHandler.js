@@ -7,6 +7,7 @@
 import { playAnimation } from './animations.js';
 import { setExpression, setExpressionByGrid, startTalking, stopTalking, faceExpressions } from './face.js';
 import { playBase64Audio } from './audio.js';
+import { showMessage, hideMessage } from './speechBubble.js';
 
 // State to avatar behavior mapping
 const stateMapping = {
@@ -114,6 +115,10 @@ function handleSuggestion(message) {
     const { app_name, message: suggestionText } = message.data || {};
     console.log(`💡 Suggestion for ${app_name}:`, suggestionText);
     
+    // Show message in speech bubble
+    const displayText = suggestionText || `Suggestion for ${app_name || 'app'}`;
+    showMessage(displayText, Math.max(5000, (suggestionText?.length || 0) * 50));
+    
     // Show excited/helpful expression
     setExpression('happy');
     playAnimation('idle');
@@ -124,6 +129,7 @@ function handleSuggestion(message) {
     setTimeout(() => {
         stopTalking();
         setExpressionByGrid(1, 0); // Idle uses (1,0) only
+        hideMessage();
     }, duration);
 }
 
@@ -131,6 +137,11 @@ function handleReply(message) {
     // AI response to user message
     const replyText = message.data?.message || '';
     console.log('💬 AI Reply:', replyText);
+    
+    // Show message in speech bubble
+    if (replyText) {
+        showMessage(replyText, Math.max(5000, replyText.length * 50));
+    }
     
     // Show speaking animation
     setExpression('happy');
@@ -141,6 +152,47 @@ function handleReply(message) {
     setTimeout(() => {
         stopTalking();
         setExpressionByGrid(1, 0); // Idle uses (1,0) only
+        hideMessage();
     }, duration);
 }
+
+// ============================================
+// TEST FUNCTIONS (for UI panel buttons)
+// ============================================
+
+export function testThinkingStart() {
+    handleThinkingStart({
+        type: 'thinking_start',
+        data: { context: 'Test context' }
+    });
+}
+
+export function testSuggestion() {
+    handleSuggestion({
+        type: 'suggestion',
+        data: {
+            app_name: 'Test App',
+            message: 'This is a test suggestion message for testing the avatar response.'
+        }
+    });
+}
+
+export function testReply() {
+    handleReply({
+        type: 'reply',
+        data: {
+            message: 'This is a test reply message from the AI assistant. It should appear in the speech bubble above the avatar!'
+        }
+    });
+}
+
+export function testState(state) {
+    handleStateMessage({
+        type: 'state',
+        state: state
+    });
+}
+
+// Export all available states for UI
+export const availableStates = Object.keys(stateMapping);
 

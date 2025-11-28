@@ -7,6 +7,12 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Speech Bubble - Above Avatar's Ornament -->
+    <div id="speech-bubble">
+        <div id="speech-bubble-text"></div>
+        <div class="speech-bubble-tail"></div>
+    </div>
+    
     <!-- Waveform Visualization (Feature 3) - Shows when recording -->
     <div id="waveform-container">
         <canvas id="waveform-canvas"></canvas>
@@ -102,6 +108,31 @@
                 <button class="anim-btn" data-anim="float">✨ Float</button>
                 <button class="anim-btn" data-anim="roll">🩰 Spin</button>
                 <button class="anim-btn" data-anim="wave">👋 Wave</button>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h3>State Tests (SERVER_SPEC.md)</h3>
+            <div class="state-grid">
+                <button class="state-test-btn" data-test="thinking_start">🤔 Thinking Start</button>
+                <button class="state-test-btn" data-test="suggestion">💡 Suggestion</button>
+                <button class="state-test-btn" data-test="reply">💬 Reply</button>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h3>State Tests (Legacy)</h3>
+            <div class="state-grid">
+                <button class="state-test-btn" data-test="idle">😊 Idle</button>
+                <button class="state-test-btn" data-test="listening">👂 Listening</button>
+                <button class="state-test-btn" data-test="thinking">🤔 Thinking</button>
+                <button class="state-test-btn" data-test="speaking">🗣️ Speaking</button>
+                <button class="state-test-btn" data-test="processing">⚙️ Processing</button>
+                <button class="state-test-btn" data-test="error">❌ Error</button>
+                <button class="state-test-btn" data-test="happy">😄 Happy</button>
+                <button class="state-test-btn" data-test="sad">😢 Sad</button>
+                <button class="state-test-btn" data-test="excited">🎉 Excited</button>
+                <button class="state-test-btn" data-test="sleepy">😴 Sleepy</button>
             </div>
         </div>
     </div>

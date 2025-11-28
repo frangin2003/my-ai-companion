@@ -35,6 +35,7 @@ import {
 } from './modules/textInput.js';
 import { handleWebSocketMessage } from './modules/stateHandler.js';
 import { startTalking, stopTalking } from './modules/face.js';
+import { initSpeechBubble } from './modules/speechBubble.js';
 
 // ============================================
 // INITIALIZATION
@@ -58,6 +59,9 @@ setDebugHelpers(characterParts.axisHelper, null);
 // Initialize UI controls
 initUIControls();
 initUIPanel();
+
+// Initialize speech bubble
+initSpeechBubble();
 
 // ============================================
 // WEBSOCKET SETUP
