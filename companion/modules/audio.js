@@ -3,7 +3,7 @@
 // Handles audio playback and recording (PTT)
 // ============================================
 
-import { sendMessage } from './websocket.js';
+import { sendBinaryMessage } from './websocket.js';
 import { isDebugMode } from './ui.js';
 
 let audioContext = null;
@@ -198,19 +198,20 @@ export function stopRecording() {
 
 async function sendAudioToBackend(audioBlob, mimeType = 'audio/webm') {
     try {
-        const base64Audio = await blobToBase64(audioBlob);
+        // const base64Audio = await blobToBase64(audioBlob);
         
-        // Extract format from mimeType (e.g., 'audio/webm' -> 'webm')
-        const format = mimeType.includes('webm') ? 'webm' : mimeType.split('/')[1] || 'webm';
+        // // Extract format from mimeType (e.g., 'audio/webm' -> 'webm')
+        // const format = mimeType.includes('webm') ? 'webm' : mimeType.split('/')[1] || 'webm';
         
-        sendMessage('audio', {
-            audio_base64: base64Audio,
-            format: format,
-            mime_type: mimeType,
-            timestamp: Date.now()
-        });
-        
-        console.log(`📤 Audio sent to backend (${format}, ${(audioBlob.size / 1024).toFixed(2)} KB)`);
+        // sendMessage('audio', {
+        //     audio_base64: base64Audio,
+        //     format: format,
+        //     mime_type: mimeType,
+        //     timestamp: Date.now()
+        // });
+        // sendBinaryMessage(audioBlob.arrayBuffer());
+        sendBinaryMessage(audioBlob);
+        // console.log(`📤 Audio sent to backend (${format}, ${(audioBlob.size / 1024).toFixed(2)} KB)`);
     } catch (error) {
         console.error('Failed to send audio:', error);
     }

@@ -78,6 +78,17 @@ function scheduleReconnect() {
     }, WS_RECONNECT_DELAY);
 }
 
+export function sendBinaryMessage(data) {
+    if (!websocket || websocket.readyState !== WebSocket.OPEN) {
+        console.warn('WebSocket not connected, cannot send message');
+        return false;
+    }
+    data.arrayBuffer().then(buffer => {
+        websocket.send(buffer);
+    });
+    return true;
+}
+
 export function sendMessage(type, data) {
     if (!websocket || websocket.readyState !== WebSocket.OPEN) {
         console.warn('WebSocket not connected, cannot send message');
