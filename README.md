@@ -63,14 +63,31 @@ uv run main.py
 ```
 *You should see: `INFO: Uvicorn running on http://0.0.0.0:8000`*
 
-### Terminal 2: Start the Client
-The client connects to the server, handles audio recording, and displays messages.
+### Terminal 2: Start the Test Client
+The `client.py` included here is a **CLI tool for testing the backend**. It allows you to verify that audio recording, TTS, and emotions are working correctly before connecting the real frontend.
 ```bash
 uv run client.py
 ```
 *You should see: `[Client] Connected to ws://localhost:8000/ws`*
 
-## 🎙️ Features & Usage
+## 🎨 Setting up the Frontend
+
+The actual frontend application (with the animated face) is located in the `main` branch of this repository.
+
+1.  **Clone the repository again** into a separate folder (e.g., `ai-companion-frontend`):
+    ```bash
+    cd ..
+    git clone https://github.com/frangin2003/my-ai-companion.git ai-companion-frontend
+    cd ai-companion-frontend
+    ```
+    *(The default branch is `main`, so you don't need to switch branches.)*
+
+2.  **Open in a separate IDE window**:
+    Open this new folder in **Google Antigravity** (or your preferred IDE).
+
+3.  **Follow the instructions** in that folder's `README.md` to start the frontend.
+
+## 🎙️ Features & Usage (Test Client)
 
 ### 🗣️ Talk to the AI
 -   In the client terminal, type `/record` to record 5 seconds of audio.
